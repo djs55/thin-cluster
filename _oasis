@@ -1,0 +1,17 @@
+OASISFormat: 0.3
+Name:        thin-cluster
+Version:     0.0.1
+Synopsis:    Simple cluster based on dm-thin
+Authors:     Dave Scott
+License:     LGPL-2.1 with OCaml linking exception
+Plugins:     META (0.2)
+BuildTools:  ocamlbuild
+
+Library dmthin
+  Pack:               true
+  CompiledObject:     best
+  Path:               lib
+  Findlibname:        dmthin
+  Modules:            Result, Xml, Superblock, Mapping, Device
+  BuildDepends:       xmlm
+
