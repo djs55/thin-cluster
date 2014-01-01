@@ -14,11 +14,21 @@ Each node will be assigned a slice of the disk by the cluster master for local a
 * when the node is running low it will request more space
 * should we pre-allocate the whole disk and have a ballooning-like protocol to return the space?
 
-The cluster master will control a metadata volume (in custom format?) for all offline user volumes and for remembering each host's private metadata volume. This is like LVM.
+We should use standard LVM and then store:
+ * uuid.raw: a normal volume
+ * uuid.vhd: a vhd-encoded thin volume
+ * uuid.thin: dm-thin encoded thin volume
+ * global-thin-pool: a large fraction of the disk set aside for thin allocations
+ * hosts
+ * uuid.host: private metadata volume for a host
 
-Each volume has a unique number, starting from 1 (and < 2 ** 24). This will be used to identify the disk to dm-thin.
+The cluster master will control a metadata volume ('hosts') (in custom format?) for remembering which host has been allocated which area of the 'global-thin-pool'
 
-There will be one 'global data volume' mapped onto every node where all data blocks are visible. Using one single 'global data volume' means the data block numbers are valid cluster-wide and don't need remapping or renumbering when blocks are moved out.
+When a thin volume is created, a small regular volume (uuid.thin) (in custom format?) will be created to store the volume's metadata when the volume is offline.
+
+Each volume has a cluster-wide unique number, starting from 1 (and < 2 ** 24). This will be used to identify the disk to dm-thin.
+
+There will be one global-thin-pool mapped onto every node where all data blocks are visible. Using one single global volume means the data block numbers are valid cluster-wide and don't need remapping or renumbering when blocks are moved out.
 
 Every node will contain a private metadata volume tracking local allocations for online volumes. All areas of the 'global data volume' which are not assigned to this host by the cluster master will be associated to disk 0, which is never activated or read from/written to.
 
