@@ -1,0 +1,12 @@
+# OASIS_START
+# DO NOT EDIT (digest: b307f621d6fa86bc672ffe0e3daaeeee)
+version = "0.0.1"
+description = "Simple cluster based on dm-thin"
+requires = "xmlm"
+archive(byte) = "dmthin.cma"
+archive(byte, plugin) = "dmthin.cma"
+archive(native) = "dmthin.cmxa"
+archive(native, plugin) = "dmthin.cmxs"
+exists_if = "dmthin.cma"
+# OASIS_STOP
+
