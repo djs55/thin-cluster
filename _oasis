@@ -15,3 +15,8 @@ Library dmthin
   Modules:            Result, Xml, Superblock, Mapping, Device
   BuildDepends:       xmlm, sexplib
 
+Executable thin
+  CompiledObject:     best
+  Path:               src
+  MainIs:             main.ml
+  BuildDepends:       dmthin, cmdliner
