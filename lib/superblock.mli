@@ -18,7 +18,7 @@ type t = {
   transaction: string;
   data_block_size: int;
   devices: Device.t list;
-}
+} with sexp
 
 val of_input: Xmlm.input -> (t, string) Result.t
 

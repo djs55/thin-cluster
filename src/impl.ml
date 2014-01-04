@@ -14,34 +14,49 @@
 
 open Common
 open Cmdliner
+open Dmthin
+open Result
 
 let require name arg = match arg with
   | None -> failwith (Printf.sprintf "Please supply a %s argument" name)
   | Some x -> x
 
-let apply common = ()
+let finally f g =
+  try
+    let x = f () in
+    g ();
+    x
+  with e ->
+    g ();
+    raise e
+
+let load common = 
+  let ic = open_in common.metadata in
+  finally
+    (fun () ->
+      let input = Superblock.make_input (`Channel ic) in
+      Superblock.of_input input
+    ) (fun () -> close_in ic)
 
 let status common =
-  apply common;
-  `Error(false, "Not implemented")
+  match load common with
+  | `Ok t ->
+    Sexplib.Sexp.output_hum_indent 2 stdout (Superblock.sexp_of_t t);
+    `Ok ()
+  | `Error msg -> `Error(false, msg)
 
 let export common volume filename =
-  apply common;
   `Ok ()
 
 let attach common filename =
-  apply common;
   `Error(false, "Not implemented")
 
 let detach common volume =
-  apply common;
   `Error(false, "Not implemented")
 
 let use common filename =
-  apply common;
   `Error(false, "Not implemented")
 
 let free common space =
-  apply common;
   `Error(false, "Not implemented")
 
