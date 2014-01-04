@@ -29,6 +29,10 @@ type t =
   | Single of single
 with sexp
 
+let to_physical_area = function
+  | Single x -> [ "", ( x.data_block, 1L ) ]
+  | Range x -> [ "", ( x.data_begin, x.length ) ]
+
 open Result
 open Xml
 

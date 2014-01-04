@@ -29,3 +29,7 @@ type t =
 with sexp
 
 val of_input: Xmlm.input -> (t, string) Result.t
+
+val to_physical_area: t -> Lvm.Allocator.t
+(** [to_physical_area t] returns a description of the physical area
+    occupied by the mapping [t] *)

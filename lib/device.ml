@@ -22,6 +22,11 @@ type t = {
   mappings: Mapping.t list;
 } with sexp
 
+let to_physical_area t =
+  List.fold_left (fun acc mapping ->
+    Lvm.Allocator.merge acc (Mapping.to_physical_area mapping)
+  ) [] t.mappings
+
 open Result
 open Xml
 
