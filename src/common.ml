@@ -17,10 +17,8 @@ type t = {
   verb: bool;
   dummy: bool;
   metadata: string;
+  total_size: int64;
 }
-
-let make debug verb dummy metadata =
-  { debug; verb; dummy; metadata }
 
 let ( |> ) a b = b a
 
@@ -81,4 +79,8 @@ let print_table header rows =
   List.iter (fun (n, _) -> Printf.printf "%s-|" (padto '-' n "")) (List.combine widths header);
   Printf.printf "\n";
   List.iter print_row rows
+
+let make debug verb dummy metadata total_size =
+  let total_size = parse_size total_size in
+  { debug; verb; dummy; metadata; total_size }
 

@@ -41,7 +41,34 @@ let load common =
 let status common =
   match load common with
   | `Ok t ->
-    Sexplib.Sexp.output_hum_indent 2 stdout (Superblock.sexp_of_t t);
+    let total_blocks = Int64.(div common.total_size (of_int t.Superblock.data_block_size)) in
+    let size x = Printf.sprintf "%s (%Ld blocks)" (Common.size (Int64.(mul x (of_int t.Superblock.data_block_size)))) x in
+    let whole_disk = [ "", (0L, total_blocks) ] in
+    begin match Superblock.find_device t 0 with
+    | None ->
+      Printf.printf "Metadata has not been initialized: see the 'initialise' command\n"
+    | Some device ->
+      let total_disk_size = size total_blocks in
+      let reserved = Device.to_physical_area device in
+      let reserved_other_hosts = size (Lvm.Allocator.size reserved) in
+      let free = Lvm.Allocator.sub whole_disk (Superblock.to_physical_area t) in
+      let local_allocation = size (Lvm.Allocator.size free) in
+      let total_available_volumes = List.length t.Superblock.devices - 1 in
+      let available_volumes =
+        List.map
+          (fun device ->
+            [ Printf.sprintf "Volume %d size" device.Device.id;
+              size (Lvm.Allocator.size (Device.to_physical_area device)) ]
+          ) (List.filter (fun device -> device.Device.id <> 0) t.Superblock.devices) in
+      let table = [
+        [ "Total disk size"; total_disk_size ];
+        [ "Reserved for other hosts"; reserved_other_hosts ];
+        [ "Available for local allocation"; local_allocation ];
+        [ "Total available volumes"; string_of_int total_available_volumes ];
+      ] @ available_volumes in
+      Common.print_table [ "Key"; "Value" ] table;
+    end;
+    (* Sexplib.Sexp.output_hum_indent 2 stdout (Superblock.sexp_of_t t); *)
     `Ok ()
   | `Error msg -> `Error(false, msg)
 

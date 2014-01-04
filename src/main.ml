@@ -45,7 +45,10 @@ let common_options_t =
   let metadata =
     let doc = Printf.sprintf "Path to the host metadata" in
     Arg.(value & opt file "/dev/mapper/metadata" & info [ "metadata" ] ~doc) in
-  Term.(pure Common.make $ debug $ verb $ dummy $ metadata)
+  let total_size =
+    let doc = "Total size of the data volume" in
+    Arg.(value & opt string "0" & info [ "total-size" ] ~doc) in
+  Term.(pure Common.make $ debug $ verb $ dummy $ metadata $ total_size)
 
 let volume =
   let doc = "The volume identifier" in

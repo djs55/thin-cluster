@@ -21,6 +21,16 @@ type t = {
   devices: Device.t list;
 } with sexp
 
+let find_device t id =
+  try
+    Some (List.find (fun d -> d.Device.id = id) t.devices)
+  with Not_found -> None
+
+let to_physical_area t =
+  List.fold_left (fun acc device ->
+    Lvm.Allocator.merge acc (Device.to_physical_area device)
+  ) [] t.devices
+
 open Result
 open Xml
 

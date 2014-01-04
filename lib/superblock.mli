@@ -20,6 +20,14 @@ type t = {
   devices: Device.t list;
 } with sexp
 
+val find_device: t -> int -> Device.t option
+(** [find_device t id] returns [Some device] where [device] is one of
+    [t.devices] where [device.id = id], or [None] *)
+
+val to_physical_area: t -> Lvm.Allocator.t
+(** [to_physical_area t] returns a representation of the physical space
+    occupied by the device [t] *)
+
 val of_input: Xmlm.input -> (t, string) Result.t
 
 val make_input: Xmlm.source -> Xmlm.input
