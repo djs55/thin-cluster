@@ -26,5 +26,6 @@ type single = {
 type t =
   | Range of range
   | Single of single
+with sexp
 
 val of_input: Xmlm.input -> (t, string) Result.t

@@ -11,6 +11,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Lesser General Public License for more details.
  *)
+open Sexplib.Std
 
 type t = {
   id: int;
@@ -19,7 +20,7 @@ type t = {
   creation_time: string;
   snap_time: string;
   mappings: Mapping.t list;
-}
+} with sexp
 
 open Result
 open Xml

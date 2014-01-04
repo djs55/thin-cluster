@@ -19,6 +19,6 @@ type t = {
   creation_time: string;
   snap_time: string;
   mappings: Mapping.t list;
-}
+} with sexp
 
 val of_input: Xmlm.input -> (t, string) Result.t

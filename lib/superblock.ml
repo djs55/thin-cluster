@@ -11,6 +11,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Lesser General Public License for more details.
  *)
+open Sexplib.Std
 
 type t = {
   uuid: string;
@@ -18,7 +19,7 @@ type t = {
   transaction: string;
   data_block_size: int;
   devices: Device.t list;
-}
+} with sexp
 
 open Result
 open Xml

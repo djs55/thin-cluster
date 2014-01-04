@@ -11,21 +11,23 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Lesser General Public License for more details.
  *)
+open Sexplib.Std
 
 type range = {
   origin_begin: int64;
   data_begin: int64;
   length: int64;
-}
+} with sexp
 
 type single = {
   origin_block: int64;
   data_block: int64;
-}
+} with sexp
 
 type t =
   | Range of range
   | Single of single
+with sexp
 
 open Result
 open Xml

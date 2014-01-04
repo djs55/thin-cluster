@@ -13,5 +13,5 @@ Library dmthin
   Path:               lib
   Findlibname:        dmthin
   Modules:            Result, Xml, Superblock, Mapping, Device
-  BuildDepends:       xmlm
+  BuildDepends:       xmlm, sexplib
 
