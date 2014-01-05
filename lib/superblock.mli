@@ -40,9 +40,9 @@ val free_for_local_allocation: t -> Allocator.t
 (** [free_for_local_allocation t] returns the region available for
     local allocations *)
 
-val allocate: t -> int64 -> (Allocator.t, string) Result.t
+val allocate: t -> int64 -> ((Allocator.t * t), string) Result.t
 (** [allocate t blocks]: allocates [blocks] worth of blocks from the free
-    space of [t] *)
+    space of [t], returning [allocation, t'] *)
 
 val of_input: int64 -> Xmlm.input -> (t, string) Result.t
 (** [of_input bytes input] reads the superblock from [input] and returns

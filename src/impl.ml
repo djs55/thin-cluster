@@ -31,7 +31,7 @@ let finally f g =
     raise e
 
 let load common = 
-  let ic = open_in common.metadata in
+  let ic = open_in common.metadata_input in
   finally
     (fun () ->
       let input = Superblock.make_input (`Channel ic) in
@@ -87,9 +87,10 @@ let free common space filename =
     let block_size = Int64.of_int t.Superblock.data_block_size in
     let required = Int64.(div (sub (add space block_size) 1L) block_size) in
     begin match Superblock.allocate t required with
-    | `Ok t ->
+    | `Ok (allocation, t) ->
       let oc = if filename = "stdout:" then stdout else open_out filename in
-      output_string oc (Jsonrpc.to_string (Allocator.rpc_of_t t));
+      output_string oc (Jsonrpc.to_string (Allocator.rpc_of_t allocation));
+      (* XXX: output new metadata *)
       `Ok ()
     | `Error msg ->
       `Error(false, msg)

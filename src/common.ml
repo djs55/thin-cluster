@@ -16,7 +16,8 @@ type t = {
   debug: bool;
   verb: bool;
   dummy: bool;
-  metadata: string;
+  metadata_input: string;
+  metadata_output: string;
   total_size: int64;
 }
 
@@ -80,7 +81,7 @@ let print_table header rows =
   Printf.printf "\n";
   List.iter print_row rows
 
-let make debug verb dummy metadata total_size =
+let make debug verb dummy metadata_input metadata_output total_size =
   let total_size = parse_size total_size in
-  { debug; verb; dummy; metadata; total_size }
+  { debug; verb; dummy; metadata_input; metadata_output; total_size }
 

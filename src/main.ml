@@ -42,13 +42,16 @@ let common_options_t =
   let dummy =
     let doc = "Use 'dummy' mode for testing." in
     Arg.(value & flag & info ["dummy"] ~docs ~doc) in
-  let metadata =
-    let doc = Printf.sprintf "Path to the host metadata" in
-    Arg.(value & opt file "/dev/mapper/metadata" & info [ "metadata" ] ~doc) in
+  let metadata_input =
+    let doc = Printf.sprintf "Path to read host metadata from" in
+    Arg.(value & opt file "/dev/mapper/metadata" & info [ "input-metadata" ] ~doc) in
+  let metadata_output =
+    let doc = Printf.sprintf "Path to write host metadata to" in
+    Arg.(value & opt string "metadata.out" & info [ "output-metadata" ] ~doc) in
   let total_size =
     let doc = "Total size of the data volume" in
     Arg.(value & opt string "0" & info [ "total-size" ] ~doc) in
-  Term.(pure Common.make $ debug $ verb $ dummy $ metadata $ total_size)
+  Term.(pure Common.make $ debug $ verb $ dummy $ metadata_input $ metadata_output $ total_size)
 
 let volume =
   let doc = "The volume identifier" in
