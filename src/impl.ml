@@ -87,8 +87,8 @@ let free common space =
     let block_size = Int64.of_int t.Superblock.data_block_size in
     let required = Int64.(div (sub (add space block_size) 1L) block_size) in
     begin match Superblock.allocate t required with
-    | `Ok mapping ->
-      (* Sexplib.Sexp.output_hum_indent 2 stdout (Mappings.sexp_of_t mapping); *)
+    | `Ok t ->
+      print_string (Jsonrpc.to_string (Allocator.rpc_of_t t));
       `Ok ()
     | `Error msg ->
       `Error(false, msg)
