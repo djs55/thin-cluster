@@ -30,8 +30,10 @@ type t =
 with sexp
 
 let to_physical_area = function
-  | Single x -> [ "", ( x.data_block, 1L ) ]
-  | Range x -> [ "", ( x.data_begin, x.length ) ]
+  | Single x ->
+    Lvm.Allocator.(sub (create "" (Int64.add x.data_block 1L)) (create "" x.data_block))
+  | Range x ->
+    Lvm.Allocator.(sub (create "" (Int64.add x.data_begin x.length)) (create "" x.data_begin))
 
 let size = function
   | Single _ -> 1L

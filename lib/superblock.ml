@@ -47,6 +47,13 @@ let reserved_for_other_hosts t = match find_device t 0 with
   | Some device ->
     Some (Device.to_physical_area device)
 
+let validate t =
+  let end_of_t areas = List.fold_left max 0L (List.map Lvm.Allocator.get_end areas) in
+  let e = end_of_t (to_physical_area t) in
+  if e > t.total_blocks
+  then `Error (Printf.sprintf "Disk is too small: total_blocks = %Ld; end of allocations = %Ld" t.total_blocks e)
+  else `Ok t
+
 (* Create the simplest-possible mapping which uses the allocation. This is
    used to create a mapping for the reserved device. *)
 let mapping_of_allocation a =
@@ -79,7 +86,8 @@ let update_reserved_device t f = match find_device t 0 with
     let mapped_blocks = Int64.(add reserved_device.Device.mapped_blocks (sub new_size old_size)) in
     let reserved_device = { reserved_device with Device.mapped_blocks } in
     let devices = reserved_device :: (List.filter (fun d -> d.Device.id <> 0) t.devices) in
-    `Ok { t with devices }
+    let t = { t with devices } in
+    validate t
   | None ->
     `Error "Unable to find the reserved device: has this volume been initialised?"
 
@@ -122,7 +130,8 @@ let of_input size input = match Xmlm.input input with
         devices (device :: acc) in
       devices [] >>= fun devices ->
       let total_blocks = Int64.(div size (of_int data_block_size)) in
-      return { uuid; total_blocks; time; transaction; data_block_size; devices }
+      let t = { uuid; total_blocks; time; transaction; data_block_size; devices } in
+      validate t
     | e -> fail ("expected <superblock>, got " ^ (string_of_signal e))
     end
   | e -> fail ("expected DTD, got " ^ (string_of_signal e))
