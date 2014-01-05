@@ -60,9 +60,24 @@ let mapping_of_allocation a =
   ) ([], 0L) a in
   List.rev mapping
 
+let initialise t =
+  let reserved_device = {
+    Device.id = 0;
+    mapped_blocks = t.total_blocks;
+    transaction = "";
+    creation_time = "0";
+    snap_time = "0";
+    mappings = mapping_of_allocation (whole_disk t);
+  } in
+  { t with devices = [ reserved_device ] }
+
 let update_reserved_device t f = match find_device t 0 with
   | Some reserved_device ->
+    let old_size = Device.size reserved_device in
     let reserved_device = f reserved_device in
+    let new_size = Device.size reserved_device in
+    let mapped_blocks = Int64.(add reserved_device.Device.mapped_blocks (sub new_size old_size)) in
+    let reserved_device = { reserved_device with Device.mapped_blocks } in
     let devices = reserved_device :: (List.filter (fun d -> d.Device.id <> 0) t.devices) in
     `Ok { t with devices }
   | None ->

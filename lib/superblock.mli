@@ -32,6 +32,9 @@ val to_physical_area: t -> Allocator.t
 val whole_disk: t -> Allocator.t
 (** [whole_disk t] returns a representation of the whole physical disk *)
 
+val initialise: t -> t
+(** [initialise t] returns an initialised [t] with the same size as [t] *)
+
 val reserved_for_other_hosts: t -> Allocator.t option
 (** [reserved_for_other_hosts t] returns the region which is reserved for
     use by other hosts. *)

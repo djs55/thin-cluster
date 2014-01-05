@@ -123,8 +123,17 @@ let free_cmd =
   Term.(ret(pure Impl.free $ common_options_t $ size $ output_filename)),
   Term.info "free" ~sdocs:_common_options ~doc ~man
 
+let initialise_cmd =
+  let doc = "initialise a local metadata area" in
+  let man = [
+    `S "DESCRIPTION";
+    `P "Initialise the local metadata area by reserving all space. The 'use' command should then be used to register some free space for local allocation.";
+  ] @ help in
+  Term.(ret(pure Impl.initialise $ common_options_t)),
+  Term.info "initialise" ~sdocs:_common_options ~doc ~man
+
 let cmds = [ export_cmd; attach_cmd; detach_cmd; status_cmd;
-             use_cmd; free_cmd ]
+             use_cmd; free_cmd; initialise_cmd ]
 
 let default_cmd = 
   let doc = "manipulate dmthin metadata" in

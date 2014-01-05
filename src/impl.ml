@@ -83,6 +83,23 @@ let output_metadata common t =
   Superblock.to_output t output;
   close_out oc
 
+let initialise common = match load common with
+  | `Ok t ->
+    if t.Superblock.devices <> [] then begin
+      Printf.fprintf stderr "WARNING: multiple devices already exist in the metadata.\n";
+      let rec confirm () =
+        Printf.fprintf stderr "Type 'erase' if you want to erase them\n%!";
+        match String.lowercase (input_line stdin) with
+        | "erase" -> ()
+        | _ -> confirm () in
+      confirm ();
+    end;
+    let t = Superblock.initialise t in
+    output_metadata common t;
+    `Ok ()
+  | `Error msg ->
+    `Error(false, msg)
+
 let use common filename =
   let ic = if filename = "stdin:" then stdin else open_in filename in
   let txt = input_line ic in
