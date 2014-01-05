@@ -22,6 +22,12 @@ type t = {
   devices: Device.t list;
 } with sexp
 
+(* used by to_frag below *)
+type node =
+  | Superblock of t
+  | Device of Device.t
+  | Mapping of Mapping.t
+
 let find_device t id =
   try
     Some (List.find (fun d -> d.Device.id = id) t.devices)
@@ -94,3 +100,46 @@ let of_input size input = match Xmlm.input input with
   | e -> fail ("expected DTD, got " ^ (string_of_signal e))
 
 let make_input x = Xmlm.make_input ~strip:true x
+
+let make_output x = Xmlm.make_output ~decl:false ~indent:(Some 2) x
+
+let to_frag = function
+  | Superblock t ->
+    let attributes = [
+      ("", "uuid"), t.uuid;
+      ("", "time"), t.time;
+      ("", "transaction"), t.transaction;
+      ("", "data_block_size"), string_of_int t.data_block_size
+    ] in
+    let tag = (("", "superblock"), attributes) in
+    `El (tag, List.map (fun x -> Device x) t.devices)
+  | Device t ->
+    let open Device in
+    let attributes = [
+      ("", "dev_id"), string_of_int t.id;
+      ("", "mapped_blocks"), Int64.to_string t.mapped_blocks;
+      ("", "transaction"), t.transaction;
+      ("", "creation_time"), t.creation_time;
+      ("", "snap_time"), t.snap_time
+    ] in
+    let tag = (("", "device"), attributes) in
+    `El (tag, List.map (fun x -> Mapping x) t.mappings)
+  | Mapping (Mapping.Range x) ->
+    let open Mapping in
+    let attributes = [
+      ("", "origin_begin"), Int64.to_string x.origin_begin;
+      ("", "data_begin"), Int64.to_string x.data_begin;
+      ("", "length"), Int64.to_string x.length
+    ] in
+    let tag = (("", "range_mapping"), attributes) in
+    `El (tag, [])
+  | Mapping (Mapping.Single x) ->
+    let open Mapping in
+    let attributes = [
+      ("", "origin_block"), Int64.to_string x.origin_block;
+      ("", "data_block"), Int64.to_string x.data_block
+    ] in
+    let tag = (("", "single_mapping"), attributes) in
+    `El (tag, [])
+
+let to_output t output = Xmlm.output_doc_tree to_frag output (None, Superblock t)

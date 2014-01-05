@@ -90,7 +90,11 @@ let free common space filename =
     | `Ok (allocation, t) ->
       let oc = if filename = "stdout:" then stdout else open_out filename in
       output_string oc (Jsonrpc.to_string (Allocator.rpc_of_t allocation));
-      (* XXX: output new metadata *)
+      close_out oc;
+      let oc = open_out common.Common.metadata_output in
+      let output = Superblock.make_output (`Channel oc) in
+      Superblock.to_output t output;
+      close_out oc;
       `Ok ()
     | `Error msg ->
       `Error(false, msg)

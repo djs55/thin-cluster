@@ -48,4 +48,11 @@ val of_input: int64 -> Xmlm.input -> (t, string) Result.t
 (** [of_input bytes input] reads the superblock from [input] and returns
     [t] representing a physical disk of size [bytes]. *)
 
+val to_output: t -> Xmlm.output -> unit
+(** [to_output t output] writes [t] as xml to [output] *)
+
 val make_input: Xmlm.source -> Xmlm.input
+(** [make_input source] makes an input parser compatible with the 'thin_*' tools *)
+
+val make_output: Xmlm.dest -> Xmlm.output
+(** [make_output dest] makes an output printer compatible with the 'thin_*' tools *)

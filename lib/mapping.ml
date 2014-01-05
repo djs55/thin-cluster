@@ -58,3 +58,4 @@ let of_input input = match Xmlm.input input with
     expect_end input >>= fun () ->
     return (Single { origin_block; data_block })
   | e -> fail ("expected <range_mapping> or <single_mapping>, got " ^ (string_of_signal e))
+
