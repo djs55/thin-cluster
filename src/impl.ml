@@ -80,7 +80,7 @@ let detach common volume =
 let use common filename =
   `Error(false, "Not implemented")
 
-let free common space =
+let free common space filename =
   let space = Common.parse_size space in
   match load common with
   | `Ok t ->
@@ -88,7 +88,8 @@ let free common space =
     let required = Int64.(div (sub (add space block_size) 1L) block_size) in
     begin match Superblock.allocate t required with
     | `Ok t ->
-      print_string (Jsonrpc.to_string (Allocator.rpc_of_t t));
+      let oc = if filename = "stdout:" then stdout else open_out filename in
+      output_string oc (Jsonrpc.to_string (Allocator.rpc_of_t t));
       `Ok ()
     | `Error msg ->
       `Error(false, msg)

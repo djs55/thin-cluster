@@ -54,9 +54,13 @@ let volume =
   let doc = "The volume identifier" in
   Arg.(value & pos 0 int 0 & info [] ~doc)
 
-let filename =
-  let doc = "The filename containing volume metadata" in
-  Arg.(value & opt file "/dev/stdout" & info [ "filename" ] ~doc)
+let output_filename =
+  let doc = "The filename to write volume metadata to" in
+  Arg.(value & opt string "stdout:" & info [ "output-filename" ] ~doc)
+
+let input_filename =
+  let doc = "The filename to read volume metadata from" in
+  Arg.(value & opt file "stdin:" & info [ "input-filename" ] ~doc)
 
 let size =
   let doc = "Amount of space (e.g. 1GiB)" in
@@ -68,7 +72,7 @@ let export_cmd =
     `S "DESCRIPTION";
     `P "Export the metadata of the specified volume for offline storage. This operation leaves the metadata intact; use the 'detach' command to remove it altogether.";
   ] @ help in
-  Term.(ret(pure Impl.export $ common_options_t $ volume $ filename )),
+  Term.(ret(pure Impl.export $ common_options_t $ volume $ output_filename )),
   Term.info "export" ~sdocs:_common_options ~doc ~man
 
 let attach_cmd =
@@ -77,7 +81,7 @@ let attach_cmd =
     `S "DESCRIPTION";
     `P "Import the volume metadata to bring the volume online. Once this command returns, dmsetup may be used to instantiate a block device for this volume.";
   ] @ help in
-  Term.(ret(pure Impl.attach $ common_options_t $ filename)),
+  Term.(ret(pure Impl.attach $ common_options_t $ input_filename)),
   Term.info "attach" ~sdocs:_common_options ~doc ~man
 
 let detach_cmd =
@@ -104,7 +108,7 @@ let use_cmd =
     `S "DESCRIPTION";
     `P "Use the specified blocks for local allocations. Note: it is the user's responsibility to ensure that the same blocks are only ever 'used' by one host at a time.";
   ] @ help in
-  Term.(ret(pure Impl.use $ common_options_t $ filename)),
+  Term.(ret(pure Impl.use $ common_options_t $ input_filename)),
   Term.info "use" ~sdocs:_common_options ~doc ~man
 
 let free_cmd =
@@ -113,7 +117,7 @@ let free_cmd =
     `S "DESCRIPTION";
     `P "Allocate blocks and mark them as used, allowing the space to be 'used' by another host.";
   ] @ help in
-  Term.(ret(pure Impl.free $ common_options_t $ size)),
+  Term.(ret(pure Impl.free $ common_options_t $ size $ output_filename)),
   Term.info "free" ~sdocs:_common_options ~doc ~man
 
 let cmds = [ export_cmd; attach_cmd; detach_cmd; status_cmd;
