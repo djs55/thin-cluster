@@ -35,30 +35,26 @@ let load common =
   finally
     (fun () ->
       let input = Superblock.make_input (`Channel ic) in
-      Superblock.of_input input
+      Superblock.of_input common.total_size input
     ) (fun () -> close_in ic)
 
 let status common =
   match load common with
   | `Ok t ->
-    let total_blocks = Int64.(div common.total_size (of_int t.Superblock.data_block_size)) in
     let size x = Printf.sprintf "%s (%Ld blocks)" (Common.size (Int64.(mul x (of_int t.Superblock.data_block_size)))) x in
-    let whole_disk = [ "", (0L, total_blocks) ] in
-    begin match Superblock.find_device t 0 with
+    begin match Superblock.reserved_for_other_hosts t with
     | None ->
       Printf.printf "Metadata has not been initialized: see the 'initialise' command\n"
-    | Some device ->
-      let total_disk_size = size total_blocks in
-      let reserved = Device.to_physical_area device in
-      let reserved_other_hosts = size (Lvm.Allocator.size reserved) in
-      let free = Lvm.Allocator.sub whole_disk (Superblock.to_physical_area t) in
-      let local_allocation = size (Lvm.Allocator.size free) in
+    | Some reserved ->
+      let total_disk_size = size t.Superblock.total_blocks in
+      let reserved_other_hosts = size (Allocator.size reserved) in
+      let local_allocation = size (Allocator.size (Superblock.free_for_local_allocation t)) in
       let total_available_volumes = List.length t.Superblock.devices - 1 in
       let available_volumes =
         List.map
           (fun device ->
             [ Printf.sprintf "Volume %d size" device.Device.id;
-              size (Lvm.Allocator.size (Device.to_physical_area device)) ]
+              size (Device.size device) ]
           ) (List.filter (fun device -> device.Device.id <> 0) t.Superblock.devices) in
       let table = [
         [ "Total disk size"; total_disk_size ];
@@ -85,5 +81,16 @@ let use common filename =
   `Error(false, "Not implemented")
 
 let free common space =
-  `Error(false, "Not implemented")
-
+  let space = Common.parse_size space in
+  match load common with
+  | `Ok t ->
+    let block_size = Int64.of_int t.Superblock.data_block_size in
+    let required = Int64.(div (sub (add space block_size) 1L) block_size) in
+    begin match Superblock.allocate t required with
+    | `Ok mapping ->
+      (* Sexplib.Sexp.output_hum_indent 2 stdout (Mappings.sexp_of_t mapping); *)
+      `Ok ()
+    | `Error msg ->
+      `Error(false, msg)
+    end
+  | `Error msg -> `Error(false, msg)

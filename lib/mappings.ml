@@ -11,21 +11,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Lesser General Public License for more details.
  *)
+open Sexplib.Std
 
-type t = {
-  id: int;
-  mapped_blocks: int64;
-  transaction: string;
-  creation_time: string;
-  snap_time: string;
-  mappings: Mappings.t;
-} with sexp
+type t = Mapping.t list with sexp
 
-val of_input: Xmlm.input -> (t, string) Result.t
-
-val size: t -> int64
-(** [size t] returns the total size occupied by device [t] *)
-
-val to_physical_area: t -> Lvm.Allocator.t
-(** [to_physical_area t] returns a representation of the physical space
-    occupied by the device [t] *)
+let size ts = List.fold_left (fun acc x -> Int64.add (Mapping.size x) acc) 0L ts

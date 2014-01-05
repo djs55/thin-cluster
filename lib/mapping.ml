@@ -33,6 +33,10 @@ let to_physical_area = function
   | Single x -> [ "", ( x.data_block, 1L ) ]
   | Range x -> [ "", ( x.data_begin, x.length ) ]
 
+let size = function
+  | Single _ -> 1L
+  | Range x -> x.length
+
 open Result
 open Xml
 

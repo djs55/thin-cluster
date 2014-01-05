@@ -19,13 +19,15 @@ type t = {
   transaction: string;
   creation_time: string;
   snap_time: string;
-  mappings: Mapping.t list;
+  mappings: Mappings.t;
 } with sexp
 
 let to_physical_area t =
   List.fold_left (fun acc mapping ->
     Lvm.Allocator.merge acc (Mapping.to_physical_area mapping)
   ) [] t.mappings
+
+let size t = Lvm.Allocator.size (to_physical_area t)
 
 open Result
 open Xml
