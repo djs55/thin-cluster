@@ -60,21 +60,34 @@ let mapping_of_allocation a =
   ) ([], 0L) a in
   List.rev mapping
 
+let update_reserved_device t f = match find_device t 0 with
+  | Some reserved_device ->
+    let reserved_device = f reserved_device in
+    let devices = reserved_device :: (List.filter (fun d -> d.Device.id <> 0) t.devices) in
+    `Ok { t with devices }
+  | None ->
+    `Error "Unable to find the reserved device: has this volume been initialised?"
+
 let allocate t blocks =
   let free = free_for_local_allocation t in
   match Lvm.Allocator.find free blocks with
   | `Ok allocation ->
-    begin match find_device t 0 with
-    | Some reserved_device ->
-      let old_reserved_allocation = Device.to_physical_area reserved_device in
-      let new_reserved_allocation = Lvm.Allocator.merge old_reserved_allocation allocation in
-      let reserved_device = { reserved_device with Device.mappings = mapping_of_allocation new_reserved_allocation } in
-      let devices = reserved_device :: (List.filter (fun d -> d.Device.id <> 0) t.devices) in
-      `Ok (allocation, { t with devices })
-    | None ->
-      `Error "Unable to find the reserved device: has this volume been initialised?"
+    begin match update_reserved_device t
+      (fun reserved_device ->
+        let old_reserved_allocation = Device.to_physical_area reserved_device in
+        let new_reserved_allocation = Lvm.Allocator.merge old_reserved_allocation allocation in
+        { reserved_device with Device.mappings = mapping_of_allocation new_reserved_allocation }) with
+    | `Ok t ->  `Ok (allocation, t)
+    | `Error x -> `Error x
     end
   | `Error free -> `Error (Printf.sprintf "Unable to allocate %Ld blocks; only %Ld free" blocks free)
+
+let free t allocation =
+  update_reserved_device t
+    (fun reserved_device ->
+      let old_reserved_allocation = Device.to_physical_area reserved_device in
+      let new_reserved_allocation = Lvm.Allocator.sub old_reserved_allocation allocation in
+      { reserved_device with Device.mappings = mapping_of_allocation new_reserved_allocation })
 
 open Result
 open Xml

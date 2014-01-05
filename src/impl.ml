@@ -77,8 +77,27 @@ let attach common filename =
 let detach common volume =
   `Error(false, "Not implemented")
 
+let output_metadata common t =
+  let oc = open_out common.Common.metadata_output in
+  let output = Superblock.make_output (`Channel oc) in
+  Superblock.to_output t output;
+  close_out oc
+
 let use common filename =
-  `Error(false, "Not implemented")
+  let ic = if filename = "stdin:" then stdin else open_in filename in
+  let txt = input_line ic in
+  let allocation = Allocator.t_of_rpc (Jsonrpc.of_string txt) in
+  match load common with
+  | `Ok t ->
+    begin match Superblock.free t allocation with
+    | `Ok t ->
+      output_metadata common t;
+      `Ok ()
+    | `Error msg ->
+      `Error(false, msg)
+    end
+  | `Error msg ->
+    `Error(false, msg)
 
 let free common space filename =
   let space = Common.parse_size space in
@@ -91,10 +110,7 @@ let free common space filename =
       let oc = if filename = "stdout:" then stdout else open_out filename in
       output_string oc (Jsonrpc.to_string (Allocator.rpc_of_t allocation));
       close_out oc;
-      let oc = open_out common.Common.metadata_output in
-      let output = Superblock.make_output (`Channel oc) in
-      Superblock.to_output t output;
-      close_out oc;
+      output_metadata common t;
       `Ok ()
     | `Error msg ->
       `Error(false, msg)

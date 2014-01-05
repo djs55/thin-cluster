@@ -44,6 +44,9 @@ val allocate: t -> int64 -> ((Allocator.t * t), string) Result.t
 (** [allocate t blocks]: allocates [blocks] worth of blocks from the free
     space of [t], returning [allocation, t'] *)
 
+val free: t -> Allocator.t -> (t, string) Result.t
+(** [free t allocation]: marks the [allocation] as free for local allocation *)
+
 val of_input: int64 -> Xmlm.input -> (t, string) Result.t
 (** [of_input bytes input] reads the superblock from [input] and returns
     [t] representing a physical disk of size [bytes]. *)
