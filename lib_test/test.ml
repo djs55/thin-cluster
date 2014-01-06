@@ -14,6 +14,8 @@
 
 open OUnit
 
+let ( |> ) a b = b a
+
 let empty = {
   Superblock.uuid = "uuid";
   total_blocks = 1024L;
