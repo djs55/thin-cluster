@@ -28,6 +28,8 @@ val size: t -> int64
 
 val to_list: t -> (int64 * int64) list
 
+val of_list: (int64 * int64) list -> t
+
 val get_end: t -> int64
 
 val choose: t -> int64 -> (t, string) Result.t

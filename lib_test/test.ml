@@ -73,7 +73,14 @@ let initialise_attach_detach () =
   let size = Allocator.size (Superblock.free_for_local_allocation t) in
   assert_equal ~printer:Int64.to_string 0L size
 
-(* After initialising, use, there is free space *)
+let allocation = Allocator.of_list [ 1L, 16L ]
+
+(* After initialising, free, there is free space *)
+let initialise_free () =
+  let t = Superblock.initialise empty in
+  let t = fail_on_error (Superblock.free t allocation) in
+  let size = Allocator.size (Superblock.free_for_local_allocation t) in
+  assert_equal ~printer:Int64.to_string (Allocator.size allocation) size
 
 (* After initialising, use, an allocation succeeds *)
 
@@ -91,6 +98,7 @@ let _ =
     "after initialise, allocation fails" >:: initialise_allocation_fails;
     "after initialise, attach, space is all accounted for" >:: initialise_attach;
     "after initialise, attach, detach, there is no free space" >:: initialise_attach_detach;
+    "after initialise, free, there is free space" >:: initialise_free;
   ] in
 
   run_test_tt ~verbose:!verbose suite
