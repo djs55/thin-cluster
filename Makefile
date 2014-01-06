@@ -17,7 +17,7 @@ setup.bin: setup.ml
 	@rm -f setup.cmx setup.cmi setup.o setup.cmo
 
 setup.data: setup.bin
-	@./setup.bin -configure
+	@./setup.bin -configure --enable-tests
 
 build: setup.data setup.bin
 	@./setup.bin -build -j $(J)
@@ -32,3 +32,5 @@ reinstall:
 uninstall:
 	@ocamlfind remove $(NAME) || true
 
+test: build
+	@./setup.bin -test
