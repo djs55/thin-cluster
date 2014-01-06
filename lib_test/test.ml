@@ -14,6 +14,21 @@
 
 open OUnit
 
+(* After initialising, there is no free space *)
+
+(* After initialising, an allocation fails *)
+
+(* After initialising and attaching a volume, the volume and the reserved
+   device have no intersection, and their sizes sum to total_blocks *)
+
+(* After initialising, attach, detach, there is no free space *)
+
+(* After initialising, use, there is free space *)
+
+(* After initialising, use, an allocation succeeds *)
+
+(* After initialising, use, free, there is no free space *)
+
 let _ =
   let verbose = ref false in
   Arg.parse [
