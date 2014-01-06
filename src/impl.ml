@@ -68,8 +68,22 @@ let status common =
     `Ok ()
   | `Error msg -> `Error(false, msg)
 
+let write_sexp_to filename s =
+  if filename = "stdout:"
+  then print_string (Sexplib.Sexp.to_string_hum s)
+  else Sexplib.Sexp.save_hum filename s
+
 let export common volume filename =
-  `Ok ()
+  match load common with
+  | `Ok t ->
+    begin match Superblock.find_device t volume with
+    | Some d ->
+      let s = Device.sexp_of_t d in
+      write_sexp_to filename s;
+      `Ok ()
+    | None -> `Error(false, Printf.sprintf "Failed to find volume %d" volume)
+    end
+  | `Error x -> `Error(false, x)
 
 let attach common filename =
   `Error(false, "Not implemented")
@@ -127,9 +141,7 @@ let free common space filename =
     begin match Superblock.allocate t required with
     | `Ok (allocation, t) ->
       let s = Allocator.sexp_of_t allocation in
-      if filename = "stdout:"
-      then print_string (Sexplib.Sexp.to_string s)
-      else Sexplib.Sexp.save_hum filename s;
+      write_sexp_to filename s;
       output_metadata common t;
       `Ok ()
     | `Error msg ->
