@@ -25,7 +25,7 @@ let empty = {
 
 (* After initialising, there is no free space *)
 let initialise_no_free_space () =
-  let size = empty |> Superblock.free_for_local_allocation |> Allocator.size in
+  let size = empty |> Superblock.initialise |> Superblock.free_for_local_allocation |> Allocator.size in
   assert_equal ~printer:Int64.to_string 0L size
 
 (* After initialising, an allocation fails *)
