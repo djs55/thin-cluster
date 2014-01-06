@@ -66,6 +66,12 @@ let initialise_attach () =
     failwith "Failed to find reserved device"
 
 (* After initialising, attach, detach, there is no free space *)
+let initialise_attach_detach () =
+  let t = Superblock.initialise empty in
+  let t = fail_on_error (Superblock.attach t device) in
+  let t = fail_on_error (Superblock.detach t device.Device.id) in
+  let size = Allocator.size (Superblock.free_for_local_allocation t) in
+  assert_equal ~printer:Int64.to_string 0L size
 
 (* After initialising, use, there is free space *)
 
@@ -84,6 +90,7 @@ let _ =
     "after initialise, there is no free space" >:: initialise_no_free_space;
     "after initialise, allocation fails" >:: initialise_allocation_fails;
     "after initialise, attach, space is all accounted for" >:: initialise_attach;
+    "after initialise, attach, detach, there is no free space" >:: initialise_attach_detach;
   ] in
 
   run_test_tt ~verbose:!verbose suite
