@@ -20,3 +20,16 @@ Executable thin
   Path:               src
   MainIs:             main.ml
   BuildDepends:       dmthin, cmdliner
+
+Executable test
+  CompiledObject:     best
+  Path:               lib_test
+  MainIs:             test.ml
+  Custom:             true
+  Install:            false
+  BuildDepends:       dmthin, oUnit
+
+Test test
+  Command:            ./test.native
+  Run:                true
+
