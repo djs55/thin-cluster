@@ -14,7 +14,19 @@
 
 open OUnit
 
+let empty = {
+  Superblock.uuid = "uuid";
+  total_blocks = 1024L;
+  time = "0";
+  transaction = "0";
+  data_block_size = 1;
+  devices = [];
+}
+
 (* After initialising, there is no free space *)
+let initialise_no_free_space () =
+  let size = empty |> Superblock.free_for_local_allocation |> Allocator.size in
+  assert_equal ~printer:Int64.to_string 0L size
 
 (* After initialising, an allocation fails *)
 
@@ -37,6 +49,7 @@ let _ =
     "thin-cluster test suite";
 
   let suite = "thin-cluster" >::: [
+    "after initialise, there is no free space" >:: initialise_no_free_space;
   ] in
 
   run_test_tt ~verbose:!verbose suite
