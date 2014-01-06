@@ -12,24 +12,20 @@
  * GNU Lesser General Public License for more details.
  *)
 
-module Interval = struct
-  type t = int64 * int64
+type t with sexp
 
-  let create start length = start, length
+val empty: t
 
-  let difference (a_start, a_length) (b_start, b_length) =
-    failwith "unimplemented"
+val create: int64 -> int64 -> t
 
-  let union (a_start, a_length) (b_start, b_length) =
-    failwith "unimplemented"
+val difference: t -> t -> t
 
-  let is_empty (_, x) = x = 0L
-end
+val union: t -> t -> t
 
-type t = Interval.t list
+val size: t -> int64
 
-let create start length = [ Interval.create start length ]
+val to_list: t -> (int64 * int64) list
 
-let difference a b =
-  let one b = List.fold_left Interval.difference b a in
-  List.fold_left one 
+val get_end: t -> int64
+
+val choose: t -> int64 -> (t, string) Result.t

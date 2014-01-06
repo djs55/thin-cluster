@@ -1,5 +1,5 @@
 # OASIS_START
-# DO NOT EDIT (digest: 79f1c6054c428f15aa35e4a83026d038)
+# DO NOT EDIT (digest: a894a2fcd47118690c83a3fab10a481f)
 Result
 Xml
 Superblock
@@ -7,4 +7,5 @@ Mapping
 Mappings
 Device
 Allocator
+Extents
 # OASIS_STOP

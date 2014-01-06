@@ -101,9 +101,11 @@ let initialise common = match load common with
     `Error(false, msg)
 
 let use common filename =
-  let ic = if filename = "stdin:" then stdin else open_in filename in
-  let txt = input_line ic in
-  let allocation = Allocator.t_of_rpc (Jsonrpc.of_string txt) in
+  let s =
+    if filename = "stdin:"
+    then Sexplib.Sexp.input_sexp stdin
+    else Sexplib.Sexp.load_sexp filename in
+  let allocation = Allocator.t_of_sexp s in
   match load common with
   | `Ok t ->
     begin match Superblock.free t allocation with
@@ -124,9 +126,10 @@ let free common space filename =
     let required = Int64.(div (sub (add space block_size) 1L) block_size) in
     begin match Superblock.allocate t required with
     | `Ok (allocation, t) ->
-      let oc = if filename = "stdout:" then stdout else open_out filename in
-      output_string oc (Jsonrpc.to_string (Allocator.rpc_of_t allocation));
-      close_out oc;
+      let s = Allocator.sexp_of_t allocation in
+      if filename = "stdout:"
+      then print_string (Sexplib.Sexp.to_string s)
+      else Sexplib.Sexp.save_hum filename s;
       output_metadata common t;
       `Ok ()
     | `Error msg ->

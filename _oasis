@@ -12,8 +12,8 @@ Library dmthin
   CompiledObject:     best
   Path:               lib
   Findlibname:        dmthin
-  Modules:            Result, Xml, Superblock, Mapping, Mappings, Device, Allocator
-  BuildDepends:       lvm, xmlm, sexplib, threads
+  Modules:            Result, Xml, Superblock, Mapping, Mappings, Device, Allocator, Extents
+  BuildDepends:       xmlm, sexplib
 
 Executable thin
   CompiledObject:     best

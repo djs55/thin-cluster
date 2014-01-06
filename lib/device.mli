@@ -26,6 +26,6 @@ val of_input: Xmlm.input -> (t, string) Result.t
 val size: t -> int64
 (** [size t] returns the total size occupied by device [t] *)
 
-val to_physical_area: t -> Lvm.Allocator.t
+val to_physical_area: t -> Allocator.t
 (** [to_physical_area t] returns a representation of the physical space
     occupied by the device [t] *)

@@ -24,10 +24,10 @@ type t = {
 
 let to_physical_area t =
   List.fold_left (fun acc mapping ->
-    Lvm.Allocator.merge acc (Mapping.to_physical_area mapping)
-  ) [] t.mappings
+    Allocator.union acc (Mapping.to_physical_area mapping)
+  ) Allocator.empty t.mappings
 
-let size t = Lvm.Allocator.size (to_physical_area t)
+let size t = Allocator.size (to_physical_area t)
 
 open Result
 open Xml
