@@ -22,6 +22,8 @@ val difference: t -> t -> t
 
 val union: t -> t -> t
 
+val intersection: t -> t -> t
+
 val size: t -> int64
 
 val to_list: t -> (int64 * int64) list

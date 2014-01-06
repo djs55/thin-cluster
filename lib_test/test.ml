@@ -35,8 +35,35 @@ let initialise_allocation_fails () =
   | `Ok _ -> failwith "succeeded in allocating 1 block when all were reserved"
   | `Error _ -> ()
 
+let device = {
+  Device.id = 1;
+  mapped_blocks = 16L;
+  transaction = "0";
+  creation_time = "0";
+  snap_time = "0";
+  mappings = [ Mapping.( Range { origin_begin = 0L; data_begin = 0L; length = 16L } ) ];
+}
+
+let fail_on_error = function
+| `Ok x -> x
+| `Error x -> failwith x
+
 (* After initialising and attaching a volume, the volume and the reserved
    device have no intersection, and their sizes sum to total_blocks *)
+let initialise_attach () =
+  let t = Superblock.initialise empty in
+  let t = fail_on_error (Superblock.attach t device) in
+  match Superblock.find_device t 0 with
+  | Some reserved ->
+    let reserved' = Device.to_physical_area reserved in
+    let device' = Device.to_physical_area device in
+    let i = Allocator.intersection reserved' device' in
+    let size = Allocator.size i in
+    assert_equal ~printer:Int64.to_string 0L size;
+    let total = Int64.add (Allocator.size reserved') (Allocator.size device') in
+    assert_equal ~printer:Int64.to_string t.Superblock.total_blocks total
+  | None ->
+    failwith "Failed to find reserved device"
 
 (* After initialising, attach, detach, there is no free space *)
 
@@ -56,6 +83,7 @@ let _ =
   let suite = "thin-cluster" >::: [
     "after initialise, there is no free space" >:: initialise_no_free_space;
     "after initialise, allocation fails" >:: initialise_allocation_fails;
+    "after initialise, attach, space is all accounted for" >:: initialise_attach;
   ] in
 
   run_test_tt ~verbose:!verbose suite
