@@ -90,6 +90,33 @@ let update_reserved_device t f = match find_device t 0 with
   | None ->
     `Error "Unable to find the reserved device: has this volume been initialised?"
 
+let attach t d = match find_device t d.Device.id with
+  | Some _ -> `Error (Printf.sprintf "device with id = %d already exists" d.Device.id)
+  | None ->
+    let allocation = Device.to_physical_area d in
+    (* XXX: we assume all blocks are private, so we remove them from the reserved map *)
+    begin match update_reserved_device t
+      (fun reserved_device ->
+        let old_reserved_allocation = Device.to_physical_area reserved_device in
+        let new_reserved_allocation = Allocator.difference old_reserved_allocation allocation in
+        { reserved_device with Device.mappings = mapping_of_allocation new_reserved_allocation }) with
+    | `Ok t ->  `Ok { t with devices = d :: t.devices }
+    | `Error x -> `Error x
+    end
+
+let detach t id = match find_device t id with
+  | None -> `Error (Printf.sprintf "device with id = %d does not exist" id)
+  | Some d ->
+    let allocation = Device.to_physical_area d in
+    begin match update_reserved_device t
+      (fun reserved_device ->
+        let old_reserved_allocation = Device.to_physical_area reserved_device in
+        let new_reserved_allocation = Allocator.union old_reserved_allocation allocation in
+        { reserved_device with Device.mappings = mapping_of_allocation new_reserved_allocation }) with
+    | `Ok t ->  `Ok { t with devices = List.filter (fun d -> d.Device.id <> id) t.devices }
+    | `Error x -> `Error x
+    end
+
 let allocate t blocks =
   let free = free_for_local_allocation t in
   match Allocator.choose free blocks with

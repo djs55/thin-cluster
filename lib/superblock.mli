@@ -43,6 +43,12 @@ val free_for_local_allocation: t -> Allocator.t
 (** [free_for_local_allocation t] returns the region available for
     local allocations *)
 
+val attach: t -> Device.t -> (t, string) Result.t
+(** [attach t device] returns a new [t] with [device] added. *)
+
+val detach: t -> int -> (t, string) Result.t
+(** [detach t id] returns a new [t] with the device with [id] removed. *)
+
 val allocate: t -> int64 -> ((Allocator.t * t), string) Result.t
 (** [allocate t blocks]: allocates [blocks] worth of blocks from the free
     space of [t], returning [allocation, t'] *)

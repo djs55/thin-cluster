@@ -73,6 +73,11 @@ let write_sexp_to filename s =
   then print_string (Sexplib.Sexp.to_string_hum s)
   else Sexplib.Sexp.save_hum filename s
 
+let read_sexp_from filename =
+  if filename = "stdin:"
+  then Sexplib.Sexp.input_sexp stdin
+  else Sexplib.Sexp.load_sexp filename
+
 let export common volume filename =
   match load common with
   | `Ok t ->
@@ -85,17 +90,35 @@ let export common volume filename =
     end
   | `Error x -> `Error(false, x)
 
-let attach common filename =
-  `Error(false, "Not implemented")
-
-let detach common volume =
-  `Error(false, "Not implemented")
-
 let output_metadata common t =
   let oc = open_out common.Common.metadata_output in
   let output = Superblock.make_output (`Channel oc) in
   Superblock.to_output t output;
   close_out oc
+
+let attach common filename =
+  match load common with
+  | `Ok t ->
+    let s = read_sexp_from filename in
+    let d = Device.t_of_sexp s in
+    begin match Superblock.attach t d with
+    | `Ok t ->
+      output_metadata common t;
+      `Ok ()
+    | `Error x -> `Error(false, x)
+    end
+  | `Error x -> `Error(false, x)
+
+let detach common volume =
+  match load common with
+  | `Ok t ->
+    begin match Superblock.detach t volume with
+    | `Ok t ->
+      output_metadata common t;
+      `Ok ()
+    | `Error x -> `Error(false, x)
+   end
+  | `Error x -> `Error(false, x)
 
 let initialise common = match load common with
   | `Ok t ->
@@ -115,10 +138,7 @@ let initialise common = match load common with
     `Error(false, msg)
 
 let use common filename =
-  let s =
-    if filename = "stdin:"
-    then Sexplib.Sexp.input_sexp stdin
-    else Sexplib.Sexp.load_sexp filename in
+  let s = read_sexp_from filename in
   let allocation = Allocator.t_of_sexp s in
   match load common with
   | `Ok t ->
