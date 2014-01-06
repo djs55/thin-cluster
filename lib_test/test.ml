@@ -29,6 +29,11 @@ let initialise_no_free_space () =
   assert_equal ~printer:Int64.to_string 0L size
 
 (* After initialising, an allocation fails *)
+let initialise_allocation_fails () =
+  let t = Superblock.initialise empty in
+  match Superblock.allocate t 1L with
+  | `Ok _ -> failwith "succeeded in allocating 1 block when all were reserved"
+  | `Error _ -> ()
 
 (* After initialising and attaching a volume, the volume and the reserved
    device have no intersection, and their sizes sum to total_blocks *)
@@ -50,6 +55,7 @@ let _ =
 
   let suite = "thin-cluster" >::: [
     "after initialise, there is no free space" >:: initialise_no_free_space;
+    "after initialise, allocation fails" >:: initialise_allocation_fails;
   ] in
 
   run_test_tt ~verbose:!verbose suite
