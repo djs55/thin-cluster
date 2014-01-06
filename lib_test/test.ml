@@ -86,10 +86,11 @@ let initialise_free () =
 let initialise_free_allocate () =
   let t = Superblock.initialise empty in
   let t = fail_on_error (Superblock.free t allocation) in
-  let a, _ = fail_on_error (Superblock.allocate t (Allocator.size allocation)) in
-  assert_equal ~printer:Int64.to_string (Allocator.size allocation) (Allocator.size a)
-
-(* After initialising, use, free, there is no free space *)
+  let a, t = fail_on_error (Superblock.allocate t (Allocator.size allocation)) in
+  assert_equal ~printer:Int64.to_string (Allocator.size allocation) (Allocator.size a);
+  (* ... and there is no space left *)
+  let size = Allocator.size (Superblock.free_for_local_allocation t) in
+  assert_equal ~printer:Int64.to_string 0L size
 
 let _ =
   let verbose = ref false in
