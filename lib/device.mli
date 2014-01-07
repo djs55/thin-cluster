@@ -31,6 +31,9 @@ val to_private_allocation: t -> Allocator.t
 (** [to_private_allocation t] returns all the non-shared physical blocks
     occupied by the device [t] *)
 
+val share_all_blocks: t -> t
+(** [share_all_blocks t] returns [t] with all the blocks marked as shared. *)
+
 val to_physical_area: t -> Allocator.t
 (** [to_physical_area t] returns a representation of the physical space
     occupied by the device [t] *)

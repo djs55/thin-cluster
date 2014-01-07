@@ -31,6 +31,10 @@ let to_physical_area t =
 let to_private_allocation t =
   Allocator.difference (to_physical_area t) t.shared_blocks
 
+let share_all_blocks t =
+  let shared_blocks = to_physical_area t in
+  { t with shared_blocks }
+
 let size t = Allocator.size (to_physical_area t)
 
 open Result

@@ -131,6 +131,14 @@ let snapshot common volume id =
     end
   | `Error x -> `Error(false, x)
 
+let clone input output id =
+  let s = read_sexp_from input in
+  let d = Device.share_all_blocks (Device.t_of_sexp s) in
+  let d' = { d with Device.id } in
+  write_sexp_to input (Device.sexp_of_t d);
+  write_sexp_to output (Device.sexp_of_t d');
+  `Ok ()
+
 let initialise common = match load common with
   | `Ok t ->
     if t.Superblock.devices <> [] then begin

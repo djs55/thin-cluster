@@ -29,7 +29,6 @@ let help = [
  `S "BUGS"; `P (Printf.sprintf "Check bug reports at %s" project_url);
 ]
 
-(* Options common to all commands *)
 let common_options_t = 
   let docs = _common_options in 
   let debug = 
@@ -108,6 +107,21 @@ let snapshot_cmd =
   ] @ help in
   Term.(ret(pure Impl.snapshot $ common_options_t $ volume $ id)),
   Term.info "snapshot" ~sdocs:_common_options ~doc ~man
+
+let clone_cmd =
+  let doc = "clone an offline volume" in
+  let man = [
+    `S "DESCRIPTION";
+    `P "Create a clone of an offline volume where all the blocks are marked as shared.";
+  ] @ help in
+  let input =
+    let doc = "Filename containing offline metadata for volume to clone" in
+    Arg.(value & pos 0 file "" & info [] ~doc) in
+  let output =
+    let doc = "Filename to contain offline metadata for new volume" in
+    Arg.(value & pos 1 string "" & info [] ~doc) in
+  Term.(ret(pure Impl.clone $ input $ output $ id)),
+  Term.info "clone" ~sdocs:_common_options ~doc ~man
 
 let status_cmd =
   let doc = "display the status of the local thin pool" in
