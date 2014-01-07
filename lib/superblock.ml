@@ -129,6 +129,25 @@ let detach t id = match find_device t id with
     | `Error x -> `Error x
     end
 
+let snapshot t id id' = match find_device t id with
+  | None -> `Error (Printf.sprintf "device with id = %d does not exist" id)
+  | Some d ->
+    begin match find_device t id' with
+    | Some _ -> `Error (Printf.sprintf "device with id = %d already exists" id')
+    | None ->
+      (* We don't need to recompute block sharing here, because find_device will do it *)
+      let d' = { d with Device.id = id' } in
+      let allocation = Device.to_physical_area d in
+      begin match update_reserved_device t
+        (fun reserved_device ->
+          let old_reserved_allocation = Device.to_physical_area reserved_device in
+          let new_reserved_allocation = Allocator.union old_reserved_allocation allocation in
+          { reserved_device with Device.mappings = mapping_of_allocation new_reserved_allocation }) with
+      | `Ok t ->  `Ok { t with devices = d' :: t.devices }
+      | `Error x -> `Error x
+      end
+    end
+
 let allocate t blocks =
   let free = free_for_local_allocation t in
   match Allocator.choose free blocks with

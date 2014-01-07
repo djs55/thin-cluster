@@ -96,6 +96,19 @@ let detach_cmd =
   Term.(ret(pure Impl.detach $ common_options_t $ volume)),
   Term.info "detach" ~sdocs:_common_options ~doc ~man
 
+let id =
+  let doc = "ID to use for new volume" in
+  Arg.(value & opt int 1 & info [ "new-volume-id" ] ~doc)
+
+let snapshot_cmd =
+  let doc = "snapshot an online volume" in
+  let man = [
+    `S "DESCRIPTION";
+    `P "Create a snapshot of an online volume where all the blocks are marked as shared.";
+  ] @ help in
+  Term.(ret(pure Impl.snapshot $ common_options_t $ volume $ id)),
+  Term.info "snapshot" ~sdocs:_common_options ~doc ~man
+
 let status_cmd =
   let doc = "display the status of the local thin pool" in
   let man = [
@@ -133,7 +146,8 @@ let initialise_cmd =
   Term.info "initialise" ~sdocs:_common_options ~doc ~man
 
 let cmds = [ export_cmd; attach_cmd; detach_cmd; status_cmd;
-             use_cmd; free_cmd; initialise_cmd ]
+             use_cmd; free_cmd; initialise_cmd;
+             snapshot_cmd ]
 
 let default_cmd = 
   let doc = "manipulate dmthin metadata" in

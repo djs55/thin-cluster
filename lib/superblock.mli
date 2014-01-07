@@ -49,6 +49,10 @@ val attach: t -> Device.t -> (t, string) Result.t
 val detach: t -> int -> (t, string) Result.t
 (** [detach t id] returns a new [t] with the device with [id] removed. *)
 
+val snapshot: t -> int -> int -> (t, string) Result.t
+(** [snapshot t id id'] returns [t'] where [id'] is a fully-shared snapshot
+    of the device [id] *)
+
 val allocate: t -> int64 -> ((Allocator.t * t), string) Result.t
 (** [allocate t blocks]: allocates [blocks] worth of blocks from the free
     space of [t], returning [allocation, t'] *)

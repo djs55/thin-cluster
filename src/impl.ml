@@ -120,6 +120,17 @@ let detach common volume =
    end
   | `Error x -> `Error(false, x)
 
+let snapshot common volume id =
+  match load common with
+  | `Ok t ->
+    begin match Superblock.snapshot t volume id with
+    | `Ok t ->
+      output_metadata common t;
+      `Ok ()
+    | `Error x -> `Error(false, x)
+    end
+  | `Error x -> `Error(false, x)
+
 let initialise common = match load common with
   | `Ok t ->
     if t.Superblock.devices <> [] then begin
