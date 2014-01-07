@@ -1,5 +1,5 @@
 # OASIS_START
-# DO NOT EDIT (digest: 2295328bd13a43585933beed4c314696)
+# DO NOT EDIT (digest: 3605c3b11835607eedb38b1923fee184)
 # Ignore VCS directories, you can use the same kind of rule outside
 # OASIS_START/STOP if you want to exclude directories that contains
 # useless stuff for the build process
@@ -16,6 +16,7 @@
 # Library dmthin
 "lib/dmthin.cmxs": use_dmthin
 "lib/iO.cmx": for-pack(Dmthin)
+"lib/thin.cmx": for-pack(Dmthin)
 "lib/result.cmx": for-pack(Dmthin)
 "lib/xml.cmx": for-pack(Dmthin)
 "lib/superblock.cmx": for-pack(Dmthin)
