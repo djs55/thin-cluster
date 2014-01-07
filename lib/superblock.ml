@@ -105,8 +105,8 @@ let update_reserved_device t f = match find_device t 0 with
 let attach t d = match find_device t d.Device.id with
   | Some _ -> `Error (Printf.sprintf "device with id = %d already exists" d.Device.id)
   | None ->
-    let allocation = Device.to_physical_area d in
-    (* XXX: we assume all blocks are private, so we remove them from the reserved map *)
+    (* We only remove the private blocks from the reserved map *)
+    let allocation = Device.to_private_allocation d in
     begin match update_reserved_device t
       (fun reserved_device ->
         let old_reserved_allocation = Device.to_physical_area reserved_device in

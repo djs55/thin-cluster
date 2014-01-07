@@ -28,6 +28,9 @@ let to_physical_area t =
     Allocator.union acc (Mapping.to_physical_area mapping)
   ) Allocator.empty t.mappings
 
+let to_private_allocation t =
+  Allocator.difference (to_physical_area t) t.shared_blocks
+
 let size t = Allocator.size (to_physical_area t)
 
 open Result

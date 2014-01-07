@@ -36,5 +36,6 @@ Operation: export: this will emit a stream of physical block addresses for a giv
 
 Operation: detach: this will add all the blocks from the given user volume to disk 0, ie owned by the "cluster".
 
-Operation: attach: this will remove the given blocks from disk 0, to a fresh disk and activates it.
+Operation: attach: this will remove the non-shared blocks from disk 0, to a fresh disk and activates it.
 
+Operation: clone: this copies volume metadata and marks all the blocks as shared
