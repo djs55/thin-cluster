@@ -29,9 +29,20 @@ type node =
   | Mapping of Mapping.t
 
 let find_device t id =
-  try
-    Some (List.find (fun d -> d.Device.id = id) t.devices)
-  with Not_found -> None
+  let lookup id =
+    try
+      Some (List.find (fun d -> d.Device.id = id) t.devices)
+    with Not_found -> None in
+  if id = 0
+  then lookup id
+  else match lookup 0, lookup id with
+  | Some reserved_device, Some device ->
+    (* recompute the set of shared blocks *)
+    let device' = Device.to_physical_area device in
+    let reserved_device' = Device.to_physical_area reserved_device in
+    let shared_blocks = Allocator.intersection device' reserved_device' in
+    Some { device with Device.shared_blocks }
+  | _, _ -> None
 
 let to_physical_area t =
   List.fold_left (fun acc device ->
@@ -74,6 +85,7 @@ let initialise t =
     creation_time = "0";
     snap_time = "0";
     mappings = mapping_of_allocation (whole_disk t);
+    shared_blocks = Allocator.empty;
   } in
   { t with devices = [ reserved_device ] }
 
@@ -93,8 +105,8 @@ let update_reserved_device t f = match find_device t 0 with
 let attach t d = match find_device t d.Device.id with
   | Some _ -> `Error (Printf.sprintf "device with id = %d already exists" d.Device.id)
   | None ->
-    let allocation = Device.to_physical_area d in
-    (* XXX: we assume all blocks are private, so we remove them from the reserved map *)
+    (* We only remove the private blocks from the reserved map *)
+    let allocation = Device.to_private_allocation d in
     begin match update_reserved_device t
       (fun reserved_device ->
         let old_reserved_allocation = Device.to_physical_area reserved_device in
@@ -115,6 +127,25 @@ let detach t id = match find_device t id with
         { reserved_device with Device.mappings = mapping_of_allocation new_reserved_allocation }) with
     | `Ok t ->  `Ok { t with devices = List.filter (fun d -> d.Device.id <> id) t.devices }
     | `Error x -> `Error x
+    end
+
+let snapshot t id id' = match find_device t id with
+  | None -> `Error (Printf.sprintf "device with id = %d does not exist" id)
+  | Some d ->
+    begin match find_device t id' with
+    | Some _ -> `Error (Printf.sprintf "device with id = %d already exists" id')
+    | None ->
+      (* We don't need to recompute block sharing here, because find_device will do it *)
+      let d' = { d with Device.id = id' } in
+      let allocation = Device.to_physical_area d in
+      begin match update_reserved_device t
+        (fun reserved_device ->
+          let old_reserved_allocation = Device.to_physical_area reserved_device in
+          let new_reserved_allocation = Allocator.union old_reserved_allocation allocation in
+          { reserved_device with Device.mappings = mapping_of_allocation new_reserved_allocation }) with
+      | `Ok t ->  `Ok { t with devices = d' :: t.devices }
+      | `Error x -> `Error x
+      end
     end
 
 let allocate t blocks =

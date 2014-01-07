@@ -19,12 +19,20 @@ type t = {
   creation_time: string;
   snap_time: string;
   mappings: Mappings.t;
+  shared_blocks: Allocator.t; (** maybe still shared with other hosts *)
 } with sexp
 
 val of_input: Xmlm.input -> (t, string) Result.t
 
 val size: t -> int64
 (** [size t] returns the total size occupied by device [t] *)
+
+val to_private_allocation: t -> Allocator.t
+(** [to_private_allocation t] returns all the non-shared physical blocks
+    occupied by the device [t] *)
+
+val share_all_blocks: t -> t
+(** [share_all_blocks t] returns [t] with all the blocks marked as shared. *)
 
 val to_physical_area: t -> Allocator.t
 (** [to_physical_area t] returns a representation of the physical space
