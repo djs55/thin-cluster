@@ -29,9 +29,20 @@ type node =
   | Mapping of Mapping.t
 
 let find_device t id =
-  try
-    Some (List.find (fun d -> d.Device.id = id) t.devices)
-  with Not_found -> None
+  let lookup id =
+    try
+      Some (List.find (fun d -> d.Device.id = id) t.devices)
+    with Not_found -> None in
+  if id = 0
+  then lookup id
+  else match lookup 0, lookup id with
+  | Some reserved_device, Some device ->
+    (* recompute the set of shared blocks *)
+    let device' = Device.to_physical_area device in
+    let reserved_device' = Device.to_physical_area reserved_device in
+    let shared_blocks = Allocator.intersection device' reserved_device' in
+    Some { device with Device.shared_blocks }
+  | _, _ -> None
 
 let to_physical_area t =
   List.fold_left (fun acc device ->
