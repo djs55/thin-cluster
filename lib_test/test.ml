@@ -44,6 +44,7 @@ let device = {
   creation_time = "0";
   snap_time = "0";
   mappings = [ Mapping.( Range { origin_begin = 0L; data_begin = 0L; length = 16L } ) ];
+  shared_blocks = Allocator.empty;
 }
 
 let fail_on_error = function

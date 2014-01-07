@@ -19,6 +19,7 @@ type t = {
   creation_time: string;
   snap_time: string;
   mappings: Mappings.t;
+  shared_blocks: Allocator.t; (** maybe still shared with other hosts *)
 } with sexp
 
 val of_input: Xmlm.input -> (t, string) Result.t

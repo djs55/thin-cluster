@@ -20,6 +20,7 @@ type t = {
   creation_time: string;
   snap_time: string;
   mappings: Mappings.t;
+  shared_blocks: Allocator.t;
 } with sexp
 
 let to_physical_area t =
@@ -48,6 +49,7 @@ let of_input input = match Xmlm.input input with
       mappings (mapping :: acc) in
     mappings [] >>= fun mappings ->
     expect_end input >>= fun () ->
-    return { id; mapped_blocks; transaction; creation_time; snap_time; mappings }
+    let shared_blocks = Allocator.empty in (* filled in at a higher-level *)
+    return { id; mapped_blocks; transaction; creation_time; snap_time; mappings; shared_blocks }
   | e -> fail ("expected <device>, got " ^ (string_of_signal e))
 

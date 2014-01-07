@@ -74,6 +74,7 @@ let initialise t =
     creation_time = "0";
     snap_time = "0";
     mappings = mapping_of_allocation (whole_disk t);
+    shared_blocks = Allocator.empty;
   } in
   { t with devices = [ reserved_device ] }
 
