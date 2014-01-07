@@ -1,5 +1,5 @@
 # OASIS_START
-# DO NOT EDIT (digest: 3605c3b11835607eedb38b1923fee184)
+# DO NOT EDIT (digest: 5d0bbf71e2c5d3ed8f7a5e95d87a536d)
 # Ignore VCS directories, you can use the same kind of rule outside
 # OASIS_START/STOP if you want to exclude directories that contains
 # useless stuff for the build process
@@ -27,24 +27,29 @@
 "lib/extents.cmx": for-pack(Dmthin)
 <lib/*.ml{,i}>: pkg_xmlm
 <lib/*.ml{,i}>: pkg_sexplib
+<lib/*.ml{,i}>: pkg_re.str
 # Executable thin
 <src/main.{native,byte}>: use_dmthin
 <src/main.{native,byte}>: pkg_cmdliner
 <src/main.{native,byte}>: pkg_xmlm
 <src/main.{native,byte}>: pkg_sexplib
+<src/main.{native,byte}>: pkg_re.str
 <src/*.ml{,i}>: use_dmthin
 <src/*.ml{,i}>: pkg_cmdliner
 <src/*.ml{,i}>: pkg_xmlm
 <src/*.ml{,i}>: pkg_sexplib
+<src/*.ml{,i}>: pkg_re.str
 # Executable test
 <lib_test/test.{native,byte}>: use_dmthin
 <lib_test/test.{native,byte}>: pkg_oUnit
 <lib_test/test.{native,byte}>: pkg_xmlm
 <lib_test/test.{native,byte}>: pkg_sexplib
+<lib_test/test.{native,byte}>: pkg_re.str
 <lib_test/*.ml{,i}>: use_dmthin
 <lib_test/*.ml{,i}>: pkg_oUnit
 <lib_test/*.ml{,i}>: pkg_xmlm
 <lib_test/*.ml{,i}>: pkg_sexplib
+<lib_test/*.ml{,i}>: pkg_re.str
 <lib_test/test.{native,byte}>: custom
 # OASIS_STOP
 <lib/*.ml{,i}>: syntax_camlp4o, pkg_sexplib.syntax
