@@ -15,30 +15,17 @@
 let _dump = "thin_dump"
 let _restore = "thin_restore"
 
-let minimum_major = 0
-let minimum_minor = 2
-let minimum_micro = 8
+let minimum = Result.fail_on_error (Version.of_string "0.2.8")
 
-let dot = Re_str.regexp_string "."
+open Result
 
-let check_version_exn () =
-  let v = IO.run_exn _dump [ "--version" ] in
-  match Re_str.split_delim dot v with
-  | [ major; minor; micro ] ->
-    let major = int_of_string major in
-    let minor = int_of_string minor in
-    let micro = int_of_string micro in
-    if
-    not(major > minimum_major
-      || (major = minimum_major
-        && (minor > minimum_minor
-            || (minor = minimum_minor
-               && micro > minimum_micro))))
-    then failwith
-      (Printf.sprintf "%s too old: %d.%d.%d < %d.%d.%d"
-        _dump major minor micro minimum_major minimum_minor minimum_micro
-      )
-  | _ -> failwith (Printf.sprintf "Failed to parse version: \"%s\"" v)
+let check_version () =
+  let open Version in
+  IO.run _dump [ "--version" ] >>= fun x ->
+  of_string x >>= fun v ->
+  if v < minimum
+  then `Error (Printf.sprintf "%s too old: (minimum is %s)" (to_string v) (to_string minimum))
+  else `Ok ()
 
 let finally f g =
   try
@@ -63,10 +50,10 @@ let with_oc filename f =
 
 let dump filename total_size =
   try
-    check_version_exn ();
+    check_version () >>= fun () ->
     with_temp_file
       (fun tmp ->
-        ignore(IO.run_exn _dump [ "-f"; "xml"; "-o"; tmp ]);
+        let (_: string) = fail_on_error (IO.run _dump [ "-f"; "xml"; "-o"; tmp ]) in
         with_ic tmp
           (fun ic ->
             let input = Superblock.make_input (`Channel ic) in
@@ -77,14 +64,14 @@ let dump filename total_size =
 
 let restore metadata filename =
   try
-    check_version_exn ();
+    check_version () >>= fun () ->
     with_temp_file
       (fun tmp ->
         with_oc tmp
           (fun oc ->
             let output = Superblock.make_output (`Channel oc) in
             Superblock.to_output metadata output;
-            ignore(IO.run_exn _restore [ "-i"; tmp; "-o"; filename ]);
+            IO.run _restore [ "-i"; tmp; "-o"; filename ] >>= fun _ ->
             `Ok ()
           )
       )

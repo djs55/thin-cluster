@@ -18,5 +18,5 @@ val debug_output: (string -> unit) ref
 val debug: ('a, unit, string, unit) format4 -> 'a
 (** Write to the debug log *)
 
-val run_exn: string -> string list -> string
+val run: string -> string list -> (string, string) Result.t
 (** [run cmd args] returns the stdout of "run args" or raises Failure *)

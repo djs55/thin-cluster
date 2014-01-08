@@ -1,5 +1,5 @@
 (*
- * Copyright (C) 2013 Citrix Systems Inc.
+ * Copyright (C) Citrix Systems Inc.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published
@@ -12,26 +12,10 @@
  * GNU Lesser General Public License for more details.
  *)
 
-type ('a, 'b) t = [
-| `Ok of 'a 
-| `Error of 'b
-]
+type t
 
-let ( >>= ) m f = match m with
-| `Ok x -> f x
-| `Error y -> `Error y
+val of_string: string -> (t, string) Result.t
 
-let return x = `Ok x
-let ok = return
-let fail x = `Error x
+val to_string: t -> string
 
-let all xs =
-  let rec loop acc = function
-  | [] -> return (List.rev acc)
-  | `Ok x :: xs -> loop (x :: acc) xs
-  | `Error x :: _ -> `Error x in
-  loop [] xs
-
-let fail_on_error = function
-  | `Ok x -> x
-  | `Error x -> failwith x
+val ( < ): t -> t -> bool

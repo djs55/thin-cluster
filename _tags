@@ -1,5 +1,5 @@
 # OASIS_START
-# DO NOT EDIT (digest: 5d0bbf71e2c5d3ed8f7a5e95d87a536d)
+# DO NOT EDIT (digest: 20dca6e1ec82a0bd253cc856205cc840)
 # Ignore VCS directories, you can use the same kind of rule outside
 # OASIS_START/STOP if you want to exclude directories that contains
 # useless stuff for the build process
@@ -17,6 +17,7 @@
 "lib/dmthin.cmxs": use_dmthin
 "lib/iO.cmx": for-pack(Dmthin)
 "lib/thin.cmx": for-pack(Dmthin)
+"lib/dmsetup.cmx": for-pack(Dmthin)
 "lib/result.cmx": for-pack(Dmthin)
 "lib/xml.cmx": for-pack(Dmthin)
 "lib/superblock.cmx": for-pack(Dmthin)
@@ -25,6 +26,7 @@
 "lib/device.cmx": for-pack(Dmthin)
 "lib/allocator.cmx": for-pack(Dmthin)
 "lib/extents.cmx": for-pack(Dmthin)
+"lib/version.cmx": for-pack(Dmthin)
 <lib/*.ml{,i}>: pkg_xmlm
 <lib/*.ml{,i}>: pkg_sexplib
 <lib/*.ml{,i}>: pkg_re.str

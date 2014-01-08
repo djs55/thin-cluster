@@ -60,3 +60,7 @@ let run_exn cmd args =
   with e ->
     close_all ();
     raise e
+
+let run cmd args =
+  try `Ok (run_exn cmd args)
+  with e -> `Error (Printf.sprintf "%s %s: %s" cmd (String.concat " " args) (Printexc.to_string e))

@@ -13,6 +13,7 @@
  *)
 
 open OUnit
+open Dmthin
 
 let ( |> ) a b = b a
 
@@ -95,6 +96,39 @@ let initialise_free_allocate () =
   let size = Allocator.size (Superblock.free_for_local_allocation t) in
   assert_equal ~printer:Int64.to_string 0L size
 
+let finally f g =
+  try
+    let result = f () in
+    g ();
+    result
+  with e ->
+    g ();
+    raise e
+
+let string_of_file filename =
+  let b = Buffer.create 1 in
+  let ic = open_in filename in
+  finally
+    (fun () ->
+      try
+        while true do
+          Buffer.add_string b (input_line ic);
+          Buffer.add_string b "\n"
+        done; ""
+      with End_of_file ->
+        Buffer.contents b
+    ) (fun () -> close_in ic)
+
+let dmsetup_status_active () =
+  let x = string_of_file "lib_test/dmsetup-status-active.txt" in
+  let status = fail_on_error (Dmsetup.status_of_string x) in
+  assert_equal { Dmsetup.state = Dmsetup.Active } status
+
+let dmsetup_status_suspended () =
+  let x = string_of_file "lib_test/dmsetup-status-suspended.txt" in
+  let status = fail_on_error (Dmthin.Dmsetup.status_of_string x) in
+  assert_equal { Dmsetup.state = Dmsetup.Suspended } status
+
 let _ =
   let verbose = ref false in
   Arg.parse [
@@ -109,6 +143,8 @@ let _ =
     "after initialise, attach, detach, there is no free space" >:: initialise_attach_detach;
     "after initialise, free, there is free space" >:: initialise_free;
     "after initialise, free, allocate succeeds" >:: initialise_free_allocate;
+    "parse dmsetup status active" >:: dmsetup_status_active;
+    "parse dmsetup status suspended" >:: dmsetup_status_suspended;
   ] in
 
   run_test_tt ~verbose:!verbose suite

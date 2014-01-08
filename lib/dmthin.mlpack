@@ -1,7 +1,8 @@
 # OASIS_START
-# DO NOT EDIT (digest: 0581794f0426f8c2d6e4e3621770854a)
+# DO NOT EDIT (digest: 005e307d1f7dbbf0d99e6b7971058c8e)
 IO
 Thin
+Dmsetup
 Result
 Xml
 Superblock
@@ -10,4 +11,5 @@ Mappings
 Device
 Allocator
 Extents
+Version
 # OASIS_STOP
