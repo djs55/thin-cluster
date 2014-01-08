@@ -1,0 +1,10 @@
+Name:              pool
+State:             SUSPENDED
+Read Ahead:        256
+Tables present:    LIVE
+Open count:        0
+Event number:      0
+Major, minor:      252, 0
+Number of targets: 1
+
+0 2097152 thin-pool 0 12/4096 3/2048 - rw no_discard_passdown
