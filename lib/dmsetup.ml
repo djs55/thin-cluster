@@ -19,10 +19,6 @@ let state_of_string = function
 | "SUSPENDED" -> `Ok Suspended
 | x -> `Error("Unknown dmsetup state: " ^ x)
 
-type status = {
-  state: state;
-}
-
 let _dmsetup = "dmsetup"
 
 open Result
@@ -88,14 +84,24 @@ let check_version () =
 
 let _state = "State"
 
-let status_of_string x =
-  let lines = Re_str.split_delim newline x in
-  let lines = until_blank_line lines in
-  let pairs = List.map to_pair lines in
-  find _state pairs >>= fun x ->
-  state_of_string x >>= fun state ->
-  `Ok { state }
+module Status = struct
+  type t = {
+    state: state;
+  }
+
+  let of_string x =
+    let lines = Re_str.split_delim newline x in
+    let lines = until_blank_line lines in
+    let pairs = List.map to_pair lines in
+    find _state pairs >>= fun x ->
+    state_of_string x >>= fun state ->
+    `Ok { state }
+end
 
 let status x =
   IO.run _dmsetup [ "status"; x ] >>= fun txt ->
-  status_of_string txt
+  Status.of_string txt
+
+module Debug = struct
+  let check_version_string = check_version_string
+end

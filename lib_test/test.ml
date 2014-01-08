@@ -121,17 +121,17 @@ let string_of_file filename =
 
 let dmsetup_status_active () =
   let x = string_of_file "lib_test/dmsetup-status-active.txt" in
-  let status = fail_on_error (Dmsetup.status_of_string x) in
-  assert_equal { Dmsetup.state = Dmsetup.Active } status
+  let status = fail_on_error (Dmsetup.Status.of_string x) in
+  assert_equal { Dmsetup.Status.state = Dmsetup.Active } status
 
 let dmsetup_status_suspended () =
   let x = string_of_file "lib_test/dmsetup-status-suspended.txt" in
-  let status = fail_on_error (Dmthin.Dmsetup.status_of_string x) in
-  assert_equal { Dmsetup.state = Dmsetup.Suspended } status
+  let status = fail_on_error (Dmsetup.Status.of_string x) in
+  assert_equal { Dmsetup.Status.state = Dmsetup.Suspended } status
 
 let dmsetup_version () =
   let x = string_of_file "lib_test/dmsetup-version.txt" in
-  fail_on_error (Dmsetup.check_version_string x)
+  fail_on_error (Dmsetup.Debug.check_version_string x)
 
 let _ =
   let verbose = ref false in

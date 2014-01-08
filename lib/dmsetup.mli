@@ -14,12 +14,18 @@
 
 type state = Active | Suspended
 
-type status = {
-  state: state;
-}
+module Status : sig
+  type t = {
+    state: state;
+  }
 
-val status_of_string: string -> (status, string) Result.t
+  val of_string: string -> (t, string) Result.t
+end
 
-val status: string -> (status, string) Result.t
+val status: string -> (Status.t, string) Result.t
 
-val check_version_string: string -> (unit, string) Result.t
+module Debug : sig
+
+  val check_version_string: string -> (unit, string) Result.t
+
+end
