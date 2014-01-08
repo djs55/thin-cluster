@@ -102,6 +102,19 @@ let status x =
   IO.run _dmsetup [ "status"; x ] >>= fun txt ->
   Status.of_string txt
 
+let create ~name ~size ~metadata ~data ~block_size ~low_water_mark () =
+  (* block_size must be a multiple of 64 KiB *)
+  let multiple = Int64.(mul 64L 1024L) in
+  ( if Int64.rem block_size multiple <> 0L
+    then `Error (Printf.sprintf "block size must be a multiple of 64KiB, was: %Ld" block_size)
+    else `Ok () ) >>= fun () ->
+  let block_size = Int64.(div block_size 512L) in
+  let size = Int64.(div size 512L) in
+  IO.run _dmsetup [ "create"; name; "--table";
+    Printf.sprintf "\"0 %Ld thin-pool %s %s %Ld %Ld\"" size metadata data block_size low_water_mark
+  ] >>= fun _ ->
+  `Ok ()
+
 module Debug = struct
   let check_version_string = check_version_string
 end

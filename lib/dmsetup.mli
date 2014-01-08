@@ -24,6 +24,15 @@ end
 
 val status: string -> (Status.t, string) Result.t
 
+val create:
+  name:string             (** device mapper device name *)
+  -> size:int64           (** total size of data in bytes *)
+  -> metadata:string      (** device to store metadata on *)
+  -> data:string          (** device to store data *)
+  -> block_size:int64     (** block size on data device *)
+  -> low_water_mark:int64 (** number of blocks to trigger a message *)
+  -> unit -> (unit, string) Result.t
+
 module Debug : sig
 
   val check_version_string: string -> (unit, string) Result.t
