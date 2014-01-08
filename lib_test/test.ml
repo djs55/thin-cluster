@@ -129,6 +129,10 @@ let dmsetup_status_suspended () =
   let status = fail_on_error (Dmthin.Dmsetup.status_of_string x) in
   assert_equal { Dmsetup.state = Dmsetup.Suspended } status
 
+let dmsetup_version () =
+  let x = string_of_file "lib_test/dmsetup-version.txt" in
+  fail_on_error (Dmsetup.check_version_string x)
+
 let _ =
   let verbose = ref false in
   Arg.parse [
@@ -143,6 +147,7 @@ let _ =
     "after initialise, attach, detach, there is no free space" >:: initialise_attach_detach;
     "after initialise, free, there is free space" >:: initialise_free;
     "after initialise, free, allocate succeeds" >:: initialise_free_allocate;
+    "parse dmsetup --version" >:: dmsetup_version;
     "parse dmsetup status active" >:: dmsetup_status_active;
     "parse dmsetup status suspended" >:: dmsetup_status_suspended;
   ] in

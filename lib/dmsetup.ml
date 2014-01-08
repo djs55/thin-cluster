@@ -46,6 +46,14 @@ let strip x =
   let last = find (String.length x - 1) in
   String.sub x start (last - start + 1)
 
+let until_blank_line lines =
+  (* the first part is separated from the second by an empty line *)
+  fst (List.fold_left (fun (acc, looking) line -> match looking, line with
+    | false, _ -> acc, false
+    | true, (""|"\n"|"\r\n") -> acc, false
+    | true, x -> x :: acc, true
+  ) ([], true) lines)
+
 let to_pair line = match Re_str.bounded_split_delim colon line 2 with
 | [ key; value ] -> key, strip value
 | _ -> failwith (Printf.sprintf "to_pair failed: %s" line)
@@ -62,6 +70,7 @@ let check_version_string v =
   let open Version in
   let lines = Re_str.split_delim newline v in
   let trim line = List.hd (Re_str.split_delim space line) in
+  let lines = until_blank_line lines in
   let pairs = List.map to_pair lines in
   find _library_version pairs >>= fun x ->
   of_string (trim x) >>= fun library_version ->
@@ -81,12 +90,7 @@ let _state = "State"
 
 let status_of_string x =
   let lines = Re_str.split_delim newline x in
-  (* the first part is separated from the second by an empty line *)
-  let lines = fst (List.fold_left (fun (acc, looking) line -> match looking, line with
-    | false, _ -> acc, false
-    | true, (""|"\n"|"\r\n") -> acc, false
-    | true, x -> x :: acc, true
-  ) ([], true) lines) in
+  let lines = until_blank_line lines in
   let pairs = List.map to_pair lines in
   find _state pairs >>= fun x ->
   state_of_string x >>= fun state ->

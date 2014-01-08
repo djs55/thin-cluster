@@ -21,3 +21,5 @@ type status = {
 val status_of_string: string -> (status, string) Result.t
 
 val status: string -> (status, string) Result.t
+
+val check_version_string: string -> (unit, string) Result.t

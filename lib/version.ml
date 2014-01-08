@@ -29,8 +29,8 @@ let of_string v =
 let to_string (major, minor, micro) = Printf.sprintf "%d.%d.%d" major minor micro
 
 let ( < ) (major, minor, micro) (minimum_major, minimum_minor, minimum_micro) =
-    not(major > minimum_major
+    major < minimum_major
       || (major = minimum_major
-        && (minor > minimum_minor
-            || (minor = minimum_minor
-               && micro > minimum_micro))))
+          && (minor < minimum_minor
+              || (minor = minimum_minor
+                 && micro < minimum_micro)))
