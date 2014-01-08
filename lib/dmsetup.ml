@@ -115,6 +115,13 @@ let create ~name ~size ~metadata ~data ~block_size ~low_water_mark () =
   ] >>= fun _ ->
   `Ok ()
 
+let activate pool volume total_size =
+  let total_size = Int64.(div total_size 512L) in
+  IO.run _dmsetup [ "create"; "thin"; "--table";
+    Printf.sprintf "\"0 %Ld thin %s %d\"" total_size pool volume
+  ] >>= fun _ ->
+  `Ok ()
+
 module Debug = struct
   let check_version_string = check_version_string
 end
