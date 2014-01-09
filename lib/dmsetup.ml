@@ -111,14 +111,14 @@ let create ~name ~size ~metadata ~data ~block_size ~low_water_mark () =
   let block_size = Int64.(div block_size 512L) in
   let size = Int64.(div size 512L) in
   IO.run _dmsetup [ "create"; name; "--table";
-    Printf.sprintf "\"0 %Ld thin-pool %s %s %Ld %Ld\"" size metadata data block_size low_water_mark
+    Printf.sprintf "0 %Ld thin-pool %s %s %Ld %Ld" size metadata data block_size low_water_mark
   ] >>= fun _ ->
   `Ok ()
 
 let activate pool volume total_size =
   let total_size = Int64.(div total_size 512L) in
   IO.run _dmsetup [ "create"; "thin"; "--table";
-    Printf.sprintf "\"0 %Ld thin %s %d\"" total_size pool volume
+    Printf.sprintf "0 %Ld thin %s %d" total_size pool volume
   ] >>= fun _ ->
   `Ok ()
 
