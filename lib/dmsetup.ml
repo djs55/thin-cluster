@@ -99,7 +99,7 @@ module Status = struct
 end
 
 let status x =
-  IO.run _dmsetup [ "status"; x ] >>= fun txt ->
+  IO.run _dmsetup [ "status"; x; "-v" ] >>= fun txt ->
   Status.of_string txt
 
 let create ~name ~size ~metadata ~data ~block_size ~low_water_mark () =
