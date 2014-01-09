@@ -82,6 +82,10 @@ let check_version () =
   IO.run _dmsetup [ "--version" ] >>= fun v ->
   check_version_string v
 
+let check_euid () = match Unix.geteuid () with
+| 0 -> `Ok ()
+| x -> `Error(Printf.sprintf "I need to run dmsetup commands as root, currently I have euid %d" x)
+
 let _state = "State"
 
 module Status = struct
@@ -98,8 +102,13 @@ module Status = struct
     `Ok { state }
 end
 
+let run_dmsetup args =
+  check_version () >>= fun () ->
+  check_euid () >>= fun () ->
+  IO.run _dmsetup args
+
 let status x =
-  IO.run _dmsetup [ "status"; x; "-v" ] >>= fun txt ->
+  run_dmsetup [ "status"; x; "-v" ] >>= fun txt ->
   Status.of_string txt
 
 let create ~name ~size ~metadata ~data ~block_size ~low_water_mark () =
@@ -110,14 +119,14 @@ let create ~name ~size ~metadata ~data ~block_size ~low_water_mark () =
     else `Ok () ) >>= fun () ->
   let block_size = Int64.(div block_size 512L) in
   let size = Int64.(div size 512L) in
-  IO.run _dmsetup [ "create"; name; "--table";
+  run_dmsetup [ "create"; name; "--table";
     Printf.sprintf "0 %Ld thin-pool %s %s %Ld %Ld" size metadata data block_size low_water_mark
   ] >>= fun _ ->
   `Ok ()
 
 let activate pool volume total_size =
   let total_size = Int64.(div total_size 512L) in
-  IO.run _dmsetup [ "create"; "thin"; "--table";
+  run_dmsetup [ "create"; "thin"; "--table";
     Printf.sprintf "0 %Ld thin %s %d" total_size pool volume
   ] >>= fun _ ->
   `Ok ()
