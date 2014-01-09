@@ -131,6 +131,14 @@ let activate pool volume total_size =
   ] >>= fun _ ->
   `Ok ()
 
+let suspend pool =
+  run_dmsetup [ "suspend"; pool ] >>= fun _ ->
+  `Ok ()
+
+let resume pool =
+  run_dmsetup [ "resume"; pool ] >>= fun _ ->
+  `Ok ()
+
 module Debug = struct
   let check_version_string = check_version_string
 end

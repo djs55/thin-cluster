@@ -24,6 +24,14 @@ end
 
 val status: string -> (Status.t, string) Result.t
 
+val suspend: string -> (unit, string) Result.t
+(** [suspend pool] moves the [pool] into the suspended state.
+    Note this function is idempotent. *)
+
+val resume: string -> (unit, string) Result.t
+(** [resume pool] moves the [pool] into the active state.
+    Note this function is idempotent. *)
+
 val create:
   name:string             (** device mapper device name *)
   -> size:int64           (** total size of data in bytes *)
