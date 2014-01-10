@@ -117,7 +117,7 @@ let run_dmsetup args =
 
 let status x =
   run_dmsetup [ "status"; x; "-v" ] >>= fun status ->
-  run_dmsetup [ "targets"; x; "-v" ] >>= fun targets ->
+  run_dmsetup [ "table"; x; "-v" ] >>= fun targets ->
   Status.of_string (status, targets)
 
 let create ~name ~size ~metadata ~data ~block_size ~low_water_mark () =
