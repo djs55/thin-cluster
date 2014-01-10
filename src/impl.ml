@@ -49,7 +49,7 @@ let load common =
   finally
     (fun () ->
       let input = Superblock.make_input (`Channel ic) in
-      Superblock.of_input common.total_size input
+      Superblock.of_input input
     ) (fun () -> close_in ic)
 
 let status common =

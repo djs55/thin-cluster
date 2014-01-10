@@ -172,21 +172,22 @@ let free t allocation =
 open Result
 open Xml
 
-let of_input size input = match Xmlm.input input with
+let of_input input = match Xmlm.input input with
   | `Dtd _ -> begin match Xmlm.input input with
     | `El_start (("", "superblock"), attr) ->
       attribute "uuid" attr >>= fun uuid ->
       attribute "time" attr >>= fun time ->
       attribute "transaction" attr >>= fun transaction ->
       attribute "data_block_size" attr >>= fun data_block_size ->
+      attribute "nr_data_blocks" attr >>= fun total_blocks ->
       int data_block_size >>= fun data_block_size ->
+      int64 total_blocks >>= fun total_blocks ->
       let rec devices acc = match Xmlm.peek input with
       | `El_end -> return (List.rev acc)
       | _ ->
         Device.of_input input >>= fun device ->
         devices (device :: acc) in
       devices [] >>= fun devices ->
-      let total_blocks = Int64.(div size (of_int data_block_size)) in
       let t = { uuid; total_blocks; time; transaction; data_block_size; devices } in
       validate t
     | e -> fail ("expected <superblock>, got " ^ (string_of_signal e))
@@ -203,7 +204,8 @@ let to_frag = function
       ("", "uuid"), t.uuid;
       ("", "time"), t.time;
       ("", "transaction"), t.transaction;
-      ("", "data_block_size"), string_of_int t.data_block_size
+      ("", "data_block_size"), string_of_int t.data_block_size;
+      ("", "nr_data_blocks"), Int64.to_string t.total_blocks;
     ] in
     let tag = (("", "superblock"), attributes) in
     `El (tag, List.map (fun x -> Device x) t.devices)

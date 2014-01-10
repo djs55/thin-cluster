@@ -48,7 +48,7 @@ let with_oc filename f =
   let oc = open_out filename in
   finally (fun () -> f oc) (fun () -> close_out oc)
 
-let dump filename total_size =
+let dump filename =
   try
     check_version () >>= fun () ->
     with_temp_file
@@ -57,7 +57,7 @@ let dump filename total_size =
         with_ic tmp
           (fun ic ->
             let input = Superblock.make_input (`Channel ic) in
-            Superblock.of_input total_size input
+            Superblock.of_input input
           )
       )
   with e -> `Error(Printexc.to_string e)

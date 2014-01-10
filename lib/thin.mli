@@ -12,8 +12,8 @@
  * GNU Lesser General Public License for more details.
  *)
 
-val dump: string -> int64 -> (Superblock.t, string) Result.t
-(** [dump device total_size] reads the metadata from [device] *)
+val dump: string -> (Superblock.t, string) Result.t
+(** [dump device] reads the metadata from [device] *)
 
 val restore: Superblock.t -> string -> (unit, string) Result.t
 (** [restore metadata device] writes the [metadata] to [device] *)

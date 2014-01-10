@@ -60,9 +60,8 @@ val allocate: t -> int64 -> ((Allocator.t * t), string) Result.t
 val free: t -> Allocator.t -> (t, string) Result.t
 (** [free t allocation]: marks the [allocation] as free for local allocation *)
 
-val of_input: int64 -> Xmlm.input -> (t, string) Result.t
-(** [of_input bytes input] reads the superblock from [input] and returns
-    [t] representing a physical disk of size [bytes]. *)
+val of_input: Xmlm.input -> (t, string) Result.t
+(** [of_input input] reads the superblock from [input] *)
 
 val to_output: t -> Xmlm.output -> unit
 (** [to_output t output] writes [t] as xml to [output] *)
