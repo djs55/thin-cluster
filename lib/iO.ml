@@ -48,8 +48,7 @@ let canonicalise x =
     ) None paths in
     match first_hit with
     | None ->
-      failwith (Printf.sprintf "Failed to find %s on $PATH ( = %s)" x (Sys.getenv "PATH"));
-      x
+      failwith (Printf.sprintf "Failed to find %s on $PATH ( = %s)" x (Sys.getenv "PATH"))
     | Some hit -> hit
   end
 
