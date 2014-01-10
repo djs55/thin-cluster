@@ -47,10 +47,7 @@ let common_options_t =
   let metadata_output =
     let doc = Printf.sprintf "Path to write host metadata to" in
     Arg.(value & opt string "metadata.out" & info [ "output-metadata" ] ~doc) in
-  let total_size =
-    let doc = "Total size of the data volume" in
-    Arg.(value & opt string "0" & info [ "total-size" ] ~doc) in
-  Term.(pure Common.make $ debug $ verb $ dummy $ metadata_input $ metadata_output $ total_size)
+  Term.(pure Common.make $ debug $ verb $ dummy $ metadata_input $ metadata_output)
 
 let volume =
   let doc = "The volume identifier" in
