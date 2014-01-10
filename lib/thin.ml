@@ -70,9 +70,9 @@ let restore metadata filename =
         with_oc tmp
           (fun oc ->
             let output = Superblock.make_output (`Channel oc) in
-            Superblock.to_output metadata output;
-            IO.run _restore [ "-i"; tmp; "-o"; filename ] >>= fun _ ->
-            `Ok ()
-          )
+            Superblock.to_output metadata output
+          );
+       IO.run _restore [ "-i"; tmp; "-o"; filename ] >>= fun _ ->
+       `Ok ()
       )
   with e -> `Error(Printexc.to_string e)
