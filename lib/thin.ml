@@ -53,7 +53,7 @@ let dump filename total_size =
     check_version () >>= fun () ->
     with_temp_file
       (fun tmp ->
-        let (_: string) = fail_on_error (IO.run _dump [ "-f"; "xml"; "-o"; tmp ]) in
+        let (_: string) = fail_on_error (IO.run _dump [ "-f"; "xml"; "-o"; tmp; filename ]) in
         with_ic tmp
           (fun ic ->
             let input = Superblock.make_input (`Channel ic) in
