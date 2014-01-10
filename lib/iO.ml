@@ -26,7 +26,35 @@ let iso8601_of_float x =
     time.Unix.tm_min
     time.Unix.tm_sec
 
+(* Note: when running 'Unix.create_process' from the top-level, if
+   the binary cannot be executed then the exception from execvp gets
+   caught by the forked toplevel, and everything blocks. Attempt to
+   work around this by performing the necessary checks before we fork() *)
+
+let colon = Re_str.regexp_string ":"
+
+let canonicalise x =
+  if (try ignore(String.index x '/'); true with Not_found -> false)
+  then x
+  else begin
+    let paths = Re_str.split colon (Sys.getenv "PATH") in
+    let first_hit = List.fold_left (fun found path -> match found with
+    | Some hit -> found
+    | None ->
+      let possibility = Filename.concat path x in
+      if (try Unix.access possibility [ Unix.X_OK ]; true with _ -> false)
+      then Some possibility
+      else None
+    ) None paths in
+    match first_hit with
+    | None ->
+      failwith (Printf.sprintf "Failed to find %s on $PATH ( = %s)" x (Sys.getenv "PATH"));
+      x
+    | Some hit -> hit
+  end
+
 let run_exn cmd args =
+  let cmd = canonicalise cmd in
   debug "exec %s %s" cmd (String.concat " " args);
   let null = Unix.openfile "/dev/null" [ Unix.O_RDWR ] 0 in
   let to_close = ref [ null ] in
