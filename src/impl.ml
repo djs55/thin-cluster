@@ -45,15 +45,8 @@ let load common =
   then IO.debug_output := (fun s ->
     Printf.fprintf stderr "%s %s\n%!" (iso8601_of_float (Unix.gettimeofday ())) s
   );
-  let stats = Unix.stat common.metadata_input in
-  if stats.Unix.st_kind = Unix.S_REG then begin
-    let ic = open_in common.metadata_input in
-    finally
-      (fun () ->
-        let input = Superblock.make_input (`Channel ic) in
-        Superblock.of_input input
-      ) (fun () -> close_in ic)
-  end else Thin.dump common.metadata_input
+  Dmsetup.status common.Common.table >>= fun status ->
+  Thin.dump status.Dmsetup.Status.metadata
 
 let status common =
   match load common with
@@ -107,46 +100,41 @@ let export common volume filename =
     end
   | `Error x -> `Error(false, x)
 
-let output_metadata common t =
-  let oc = open_out common.Common.metadata_output in
-  let output = Superblock.make_output (`Channel oc) in
-  Superblock.to_output t output;
-  close_out oc
+(* NB: don't run this in parallel with other operations on the same table *)
+let rewrite_metadata common t =
+  let open Dmsetup in
+  status common.Common.table >>= fun s ->
+  ( if s.Status.state <> Suspended then suspend common.Common.table else `Ok ()) >>= fun () ->
+  Thin.restore t s.Status.metadata >>= fun () ->
+  ( if s.Status.state = Active then resume common.Common.table else `Ok ()) >>= fun () ->
+  `Ok ()
+
+let dont_print_usage = function
+  | `Ok x -> `Ok x
+  | `Error x -> `Error(false, x)
 
 let attach common filename =
-  match load common with
-  | `Ok t ->
+  dont_print_usage (
+    load common >>= fun t ->
     let s = read_sexp_from filename in
     let d = Device.t_of_sexp s in
-    begin match Superblock.attach t d with
-    | `Ok t ->
-      output_metadata common t;
-      `Ok ()
-    | `Error x -> `Error(false, x)
-    end
-  | `Error x -> `Error(false, x)
+    Superblock.attach t d >>= fun t ->
+    rewrite_metadata common t
+  )
 
 let detach common volume =
-  match load common with
-  | `Ok t ->
-    begin match Superblock.detach t volume with
-    | `Ok t ->
-      output_metadata common t;
-      `Ok ()
-    | `Error x -> `Error(false, x)
-   end
-  | `Error x -> `Error(false, x)
+  dont_print_usage (
+    load common >>= fun t ->
+    Superblock.detach t volume >>= fun t ->
+    rewrite_metadata common t
+  )
 
 let snapshot common volume id =
-  match load common with
-  | `Ok t ->
-    begin match Superblock.snapshot t volume id with
-    | `Ok t ->
-      output_metadata common t;
-      `Ok ()
-    | `Error x -> `Error(false, x)
-    end
-  | `Error x -> `Error(false, x)
+  dont_print_usage (
+    load common >>= fun t ->
+    Superblock.snapshot t volume id >>= fun t ->
+    rewrite_metadata common t
+  )
 
 let clone input output id =
   let s = read_sexp_from input in
@@ -156,8 +144,9 @@ let clone input output id =
   write_sexp_to output (Device.sexp_of_t d');
   `Ok ()
 
-let initialise common = match load common with
-  | `Ok t ->
+let initialise common =
+  dont_print_usage (
+    load common >>= fun t ->
     if t.Superblock.devices <> [] then begin
       Printf.fprintf stderr "WARNING: multiple devices already exist in the metadata.\n";
       let rec confirm () =
@@ -168,39 +157,26 @@ let initialise common = match load common with
       confirm ();
     end;
     let t = Superblock.initialise t in
-    output_metadata common t;
-    `Ok ()
-  | `Error msg ->
-    `Error(false, msg)
+    rewrite_metadata common t
+  )
 
 let use common filename =
   let s = read_sexp_from filename in
   let allocation = Allocator.t_of_sexp s in
-  match load common with
-  | `Ok t ->
-    begin match Superblock.free t allocation with
-    | `Ok t ->
-      output_metadata common t;
-      `Ok ()
-    | `Error msg ->
-      `Error(false, msg)
-    end
-  | `Error msg ->
-    `Error(false, msg)
+  dont_print_usage (
+    load common >>= fun t ->
+    Superblock.free t allocation >>= fun t ->
+    rewrite_metadata common t
+  )
 
 let free common space filename =
   let space = Common.parse_size space in
-  match load common with
-  | `Ok t ->
+  dont_print_usage (
+    load common >>= fun t ->
     let block_size = Int64.of_int t.Superblock.data_block_size in
     let required = Int64.(div (sub (add space block_size) 1L) block_size) in
-    begin match Superblock.allocate t required with
-    | `Ok (allocation, t) ->
-      let s = Allocator.sexp_of_t allocation in
-      write_sexp_to filename s;
-      output_metadata common t;
-      `Ok ()
-    | `Error msg ->
-      `Error(false, msg)
-    end
-  | `Error msg -> `Error(false, msg)
+    Superblock.allocate t required >>= fun (allocation, t) ->
+    let s = Allocator.sexp_of_t allocation in
+    write_sexp_to filename s;
+    rewrite_metadata common t
+  )

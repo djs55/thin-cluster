@@ -16,8 +16,7 @@ type t = {
   debug: bool;
   verb: bool;
   dummy: bool;
-  metadata_input: string;
-  metadata_output: string;
+  table: string;
 }
 
 let ( |> ) a b = b a
@@ -80,6 +79,6 @@ let print_table header rows =
   Printf.printf "\n";
   List.iter print_row rows
 
-let make debug verb dummy metadata_input metadata_output =
-  { debug; verb; dummy; metadata_input; metadata_output }
+let make debug verb dummy table =
+  { debug; verb; dummy; table }
 

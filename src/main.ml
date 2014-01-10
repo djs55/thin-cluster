@@ -41,13 +41,10 @@ let common_options_t =
   let dummy =
     let doc = "Use 'dummy' mode for testing." in
     Arg.(value & flag & info ["dummy"] ~docs ~doc) in
-  let metadata_input =
-    let doc = Printf.sprintf "Path to read host metadata from" in
-    Arg.(value & opt file "/dev/mapper/metadata" & info [ "input-metadata" ] ~doc) in
-  let metadata_output =
-    let doc = Printf.sprintf "Path to write host metadata to" in
-    Arg.(value & opt string "metadata.out" & info [ "output-metadata" ] ~doc) in
-  Term.(pure Common.make $ debug $ verb $ dummy $ metadata_input $ metadata_output)
+  let table =
+    let doc = "Name of the device mapper table" in
+    Arg.(value & opt string "thin" & info [ "table" ] ~docs ~doc) in
+  Term.(pure Common.make $ debug $ verb $ dummy $ table)
 
 let volume =
   let doc = "The volume identifier" in
