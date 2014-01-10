@@ -45,12 +45,15 @@ let load common =
   then IO.debug_output := (fun s ->
     Printf.fprintf stderr "%s %s\n%!" (iso8601_of_float (Unix.gettimeofday ())) s
   );
-  let ic = open_in common.metadata_input in
-  finally
-    (fun () ->
-      let input = Superblock.make_input (`Channel ic) in
-      Superblock.of_input input
-    ) (fun () -> close_in ic)
+  let stats = Unix.stat common.metadata_input in
+  if stats.Unix.st_kind = Unix.S_REG then begin
+    let ic = open_in common.metadata_input in
+    finally
+      (fun () ->
+        let input = Superblock.make_input (`Channel ic) in
+        Superblock.of_input input
+      ) (fun () -> close_in ic)
+  end else Thin.dump common.metadata_input
 
 let status common =
   match load common with
