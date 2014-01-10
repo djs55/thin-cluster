@@ -153,10 +153,10 @@ let initialise_cmd =
   
   let metadata =
     let doc = "The metadata device" in
-    Arg.(value & opt file "" & info [ "metadata" ] ~doc) in
+    Arg.(value & opt (some file) None & info [ "metadata" ] ~doc) in
   let data =
     let doc = "The data device" in
-    Arg.(value & opt file "" & info [ "data" ] ~doc) in
+    Arg.(value & opt (some file) None & info [ "data" ] ~doc) in
   let block_size =
     let doc = "The size of a block" in
     Arg.(value & opt string "64KiB" & info [ "block-size" ] ~doc) in

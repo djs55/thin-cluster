@@ -18,8 +18,8 @@ open Dmthin
 open Result
 
 let require name arg = match arg with
-  | None -> failwith (Printf.sprintf "Please supply a %s argument" name)
-  | Some x -> x
+  | None -> `Error (true, Printf.sprintf "Please supply a %s argument" name)
+  | Some x -> `Ok x
 
 let finally f g =
   try
@@ -145,6 +145,8 @@ let clone input output id =
   `Ok ()
 
 let initialise common metadata data block_size low_water_mark =
+  require "metadata" metadata >>= fun metadata ->
+  require "data" data >>= fun data ->
   dont_print_usage (
     begin match Thin.dump metadata with
     | `Ok t ->
