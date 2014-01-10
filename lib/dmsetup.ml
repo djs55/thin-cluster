@@ -38,6 +38,13 @@ let until_blank_line lines =
     | true, x -> x :: acc, true
   ) ([], true) lines)
 
+let after_blank_line lines =
+  List.rev (fst (List.fold_left (fun (acc, found) line -> match found, line with
+    | true, _ -> (line :: acc, found)
+    | false, (""|"\n"|"\r\n") -> acc, true
+    | false, x -> acc, found
+  ) ([], false) lines))
+
 let to_pair line = match Re_str.bounded_split_delim colon line 2 with
 | [ key; value ] -> key, IO.strip value
 | _ -> failwith (Printf.sprintf "to_pair failed: %s" line)
@@ -79,15 +86,28 @@ let _state = "State"
 module Status = struct
   type t = {
     state: state;
+    metadata: string;
+    data: string;
   }
 
-  let of_string x =
-    let lines = Re_str.split_delim newline x in
+  let of_string (status, targets) =
+    let lines = Re_str.split_delim newline status in
     let lines = until_blank_line lines in
     let pairs = List.map to_pair lines in
     find _state pairs >>= fun x ->
     state_of_string x >>= fun state ->
-    `Ok { state }
+    let lines = Re_str.split_delim newline targets in
+    let lines = after_blank_line lines in
+    match lines with
+    | [] -> `Error(Printf.sprintf "Failed to find target devices in: %s" targets)
+    | x :: _ ->
+      begin match Re_str.split_delim space x with
+      | _ :: _ :: "thin-pool" :: metadata :: data :: _ ->
+        let metadata = "/dev/block/" ^ metadata in
+        let data = "/dev/block/" ^ data in
+        `Ok { state; metadata; data }
+      | _ -> `Error(Printf.sprintf "Failed to parse dmsetup targets: %s" x)
+      end
 end
 
 let run_dmsetup args =
@@ -96,8 +116,9 @@ let run_dmsetup args =
   IO.run _dmsetup args
 
 let status x =
-  run_dmsetup [ "status"; x; "-v" ] >>= fun txt ->
-  Status.of_string txt
+  run_dmsetup [ "status"; x; "-v" ] >>= fun status ->
+  run_dmsetup [ "targets"; x; "-v" ] >>= fun targets ->
+  Status.of_string (status, targets)
 
 let create ~name ~size ~metadata ~data ~block_size ~low_water_mark () =
   (* block_size must be a multiple of 64 KiB *)

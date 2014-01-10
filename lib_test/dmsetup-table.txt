@@ -1,0 +1,10 @@
+Name:              foo
+State:             ACTIVE
+Read Ahead:        256
+Tables present:    LIVE
+Open count:        0
+Event number:      0
+Major, minor:      252, 0
+Number of targets: 1
+
+0 2097152 thin-pool 202:32 202:48 128 1024 0 

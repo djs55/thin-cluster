@@ -121,13 +121,22 @@ let string_of_file filename =
 
 let dmsetup_status_active () =
   let x = string_of_file "lib_test/dmsetup-status-active.txt" in
-  let status = fail_on_error (Dmsetup.Status.of_string x) in
-  assert_equal { Dmsetup.Status.state = Dmsetup.Active } status
+  let y = string_of_file "lib_test/dmsetup-table.txt" in
+  let status = fail_on_error (Dmsetup.Status.of_string (x, y)) in
+  assert_equal Dmsetup.Active status.Dmsetup.Status.state
 
 let dmsetup_status_suspended () =
   let x = string_of_file "lib_test/dmsetup-status-suspended.txt" in
-  let status = fail_on_error (Dmsetup.Status.of_string x) in
-  assert_equal { Dmsetup.Status.state = Dmsetup.Suspended } status
+  let y = string_of_file "lib_test/dmsetup-table.txt" in
+  let status = fail_on_error (Dmsetup.Status.of_string (x, y)) in
+  assert_equal Dmsetup.Suspended status.Dmsetup.Status.state
+
+let dmsetup_devices () =
+  let x = string_of_file "lib_test/dmsetup-status-suspended.txt" in
+  let y = string_of_file "lib_test/dmsetup-table.txt" in
+  let status = fail_on_error (Dmsetup.Status.of_string (x, y)) in
+  assert_equal "/dev/block/202:32" status.Dmsetup.Status.metadata;
+  assert_equal "/dev/block/202:48" status.Dmsetup.Status.data
 
 let dmsetup_version () =
   let x = string_of_file "lib_test/dmsetup-version.txt" in
@@ -150,6 +159,7 @@ let _ =
     "parse dmsetup --version" >:: dmsetup_version;
     "parse dmsetup status active" >:: dmsetup_status_active;
     "parse dmsetup status suspended" >:: dmsetup_status_suspended;
+    "parse dmsetup table" >:: dmsetup_devices;
   ] in
 
   run_test_tt ~verbose:!verbose suite

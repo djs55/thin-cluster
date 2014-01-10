@@ -17,9 +17,12 @@ type state = Active | Suspended
 module Status : sig
   type t = {
     state: state;
+    metadata: string; (** path to the metadata device *)
+    data: string;     (** path to the data device *)
   }
 
-  val of_string: string -> (t, string) Result.t
+  val of_string: string * string -> (t, string) Result.t
+  (** for testing only *)
 end
 
 val status: string -> (Status.t, string) Result.t
