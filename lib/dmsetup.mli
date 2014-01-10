@@ -44,6 +44,9 @@ val create:
   -> low_water_mark:int64 (** number of blocks to trigger a message *)
   -> unit -> (unit, string) Result.t
 
+val add: string -> int -> (unit, string) Result.t
+(** [add pool volume] adds an empty volume to the [pool] with id [volume] *)
+
 val activate: string -> int -> int64 -> (unit, string) Result.t
 (** [activate pool volume size] creates a block device corresponding to
     [volume], allocated via [pool], with total [size] *)

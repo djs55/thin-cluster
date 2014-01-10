@@ -38,7 +38,7 @@ let finally f g =
 
 let with_temp_file f =
   let tmp = Filename.temp_file "dmthin" ".xml" in
-  finally (fun () -> f tmp) (fun () -> Unix.unlink tmp)
+  finally (fun () -> f tmp) (fun () -> (* Unix.unlink tmp *) ())
 
 let with_ic filename f =
   let ic = open_in filename in
@@ -67,6 +67,7 @@ let restore metadata filename =
     check_version () >>= fun () ->
     with_temp_file
       (fun tmp ->
+Printf.fprintf stderr "*** using %s\n%!" tmp;
         with_oc tmp
           (fun oc ->
             let output = Superblock.make_output (`Channel oc) in

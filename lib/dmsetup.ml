@@ -148,6 +148,10 @@ let resume pool =
   run_dmsetup [ "resume"; pool ] >>= fun _ ->
   `Ok ()
 
+let add pool volume =
+  run_dmsetup [ "message"; pool; string_of_int volume; Printf.sprintf "create_thin %d" volume ] >>= fun _ ->
+  `Ok ()
+
 module Debug = struct
   let check_version_string = check_version_string
 end

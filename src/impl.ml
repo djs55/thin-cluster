@@ -101,10 +101,20 @@ let export common volume filename =
   | `Error x -> `Error(false, x)
 
 (* NB: don't run this in parallel with other operations on the same table *)
-let rewrite_metadata common t =
+let rewrite_metadata common before_t t =
   let open Dmsetup in
   status common.Common.table >>= fun s ->
   ( if s.Status.state <> Suspended then suspend common.Common.table else `Ok ()) >>= fun () ->
+  (* Add any missing volumes. XXX figure out when they should be deleted *)
+  let old_device_ids = List.map (fun d -> d.Device.id) before_t.Superblock.devices in
+  let new_device_ids = List.map (fun d -> d.Device.id) t.Superblock.devices in
+  let appeared = List.filter (fun d -> not(List.mem d old_device_ids)) new_device_ids in
+  let rec loop = function
+  | [] -> `Ok ()
+  | id :: rest ->
+    Dmsetup.add common.Common.table id >>= fun () ->
+    loop rest in
+  loop appeared >>= fun () -> 
   Thin.restore t s.Status.metadata >>= fun () ->
   ( if s.Status.state = Active then resume common.Common.table else `Ok ()) >>= fun () ->
   `Ok ()
@@ -115,25 +125,25 @@ let dont_print_usage = function
 
 let attach common filename =
   dont_print_usage (
-    load common >>= fun t ->
+    load common >>= fun before_t ->
     let s = read_sexp_from filename in
     let d = Device.t_of_sexp s in
-    Superblock.attach t d >>= fun t ->
-    rewrite_metadata common t
+    Superblock.attach before_t d >>= fun t ->
+    rewrite_metadata common before_t t
   )
 
 let detach common volume =
   dont_print_usage (
-    load common >>= fun t ->
-    Superblock.detach t volume >>= fun t ->
-    rewrite_metadata common t
+    load common >>= fun before_t ->
+    Superblock.detach before_t volume >>= fun t ->
+    rewrite_metadata common before_t t
   )
 
 let snapshot common volume id =
   dont_print_usage (
-    load common >>= fun t ->
-    Superblock.snapshot t volume id >>= fun t ->
-    rewrite_metadata common t
+    load common >>= fun before_t ->
+    Superblock.snapshot before_t volume id >>= fun t ->
+    rewrite_metadata common before_t t
   )
 
 let clone input output id =
@@ -170,28 +180,28 @@ let initialise common metadata data block_size low_water_mark =
     | `Error (`Unknown _) -> `Error (Printf.sprintf "BLKGETSIZE64 %s failed" data) ) >>= fun size ->
     let block_size = parse_size block_size in
     Dmsetup.create ~name:common.Common.table ~size ~metadata ~data ~block_size ~low_water_mark () >>= fun () ->
-    load common >>= fun t ->
-    let t = Superblock.initialise t in
-    rewrite_metadata common t
+    load common >>= fun before_t ->
+    let t = Superblock.initialise before_t in
+    rewrite_metadata common before_t t
   )
 
 let use common filename =
   let s = read_sexp_from filename in
   let allocation = Allocator.t_of_sexp s in
   dont_print_usage (
-    load common >>= fun t ->
-    Superblock.free t allocation >>= fun t ->
-    rewrite_metadata common t
+    load common >>= fun before_t ->
+    Superblock.free before_t allocation >>= fun t ->
+    rewrite_metadata common before_t t
   )
 
 let free common space filename =
   let space = Common.parse_size space in
   dont_print_usage (
-    load common >>= fun t ->
-    let block_size = Int64.of_int t.Superblock.data_block_size in
+    load common >>= fun before_t ->
+    let block_size = Int64.of_int before_t.Superblock.data_block_size in
     let required = Int64.(div (sub (add space block_size) 1L) block_size) in
-    Superblock.allocate t required >>= fun (allocation, t) ->
+    Superblock.allocate before_t required >>= fun (allocation, t) ->
     let s = Allocator.sexp_of_t allocation in
     write_sexp_to filename s;
-    rewrite_metadata common t
+    rewrite_metadata common before_t t
   )
