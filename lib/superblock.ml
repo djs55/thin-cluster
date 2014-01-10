@@ -69,8 +69,8 @@ let validate t =
 let mapping_of_allocation a =
   let open Mapping in
   let mapping next = function
-  | start, 1L -> Single { origin_block = next; data_block = start }, Int64.succ next
-  | start, length -> Range { origin_begin = next; data_begin = start; length }, Int64.add next length in
+  | start, 1L -> Single { origin_block = next; data_block = start; time = "0" }, Int64.succ next
+  | start, length -> Range { origin_begin = next; data_begin = start; length; time = "0" }, Int64.add next length in
   let mapping, _ = List.fold_left (fun (acc, next) area ->
     let this, next = mapping next area in
     this :: acc, next
@@ -81,7 +81,7 @@ let initialise t =
   let reserved_device = {
     Device.id = 0;
     mapped_blocks = t.total_blocks;
-    transaction = "";
+    transaction = "0";
     creation_time = "0";
     snap_time = "0";
     mappings = mapping_of_allocation (whole_disk t);
@@ -225,7 +225,8 @@ let to_frag = function
     let attributes = [
       ("", "origin_begin"), Int64.to_string x.origin_begin;
       ("", "data_begin"), Int64.to_string x.data_begin;
-      ("", "length"), Int64.to_string x.length
+      ("", "length"), Int64.to_string x.length;
+      ("", "time"), x.time;
     ] in
     let tag = (("", "range_mapping"), attributes) in
     `El (tag, [])
@@ -233,7 +234,8 @@ let to_frag = function
     let open Mapping in
     let attributes = [
       ("", "origin_block"), Int64.to_string x.origin_block;
-      ("", "data_block"), Int64.to_string x.data_block
+      ("", "data_block"), Int64.to_string x.data_block;
+      ("", "time"), x.time
     ] in
     let tag = (("", "single_mapping"), attributes) in
     `El (tag, [])

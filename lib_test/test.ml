@@ -44,7 +44,7 @@ let device = {
   transaction = "0";
   creation_time = "0";
   snap_time = "0";
-  mappings = [ Mapping.( Range { origin_begin = 0L; data_begin = 0L; length = 16L } ) ];
+  mappings = [ Mapping.( Range { origin_begin = 0L; data_begin = 0L; length = 16L; time = "0" } ) ];
   shared_blocks = Allocator.empty;
 }
 

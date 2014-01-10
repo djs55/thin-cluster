@@ -17,11 +17,13 @@ type range = {
   origin_begin: int64;
   data_begin: int64;
   length: int64;
+  time: string;
 } with sexp
 
 type single = {
   origin_block: int64;
   data_block: int64;
+  time: string;
 } with sexp
 
 type t =
@@ -45,17 +47,19 @@ let of_input input = match Xmlm.input input with
     attribute "origin_begin" attr >>= fun origin_begin ->
     attribute "data_begin" attr >>= fun data_begin ->
     attribute "length" attr >>= fun length ->
+    attribute "time" attr >>= fun time ->
     int64 origin_begin >>= fun origin_begin ->
     int64 data_begin >>= fun data_begin ->
     int64 length >>= fun length ->
     expect_end input >>= fun () ->
-    return (Range { origin_begin; data_begin; length })
+    return (Range { origin_begin; data_begin; length; time })
   | `El_start (("", "single_mapping"), attr) ->
     attribute "origin_block" attr >>= fun origin_block ->
     attribute "data_block" attr >>= fun data_block ->
+    attribute "time" attr >>= fun time ->
     int64 origin_block >>= fun origin_block ->
     int64 data_block >>= fun data_block ->
     expect_end input >>= fun () ->
-    return (Single { origin_block; data_block })
+    return (Single { origin_block; data_block; time })
   | e -> fail ("expected <range_mapping> or <single_mapping>, got " ^ (string_of_signal e))
 

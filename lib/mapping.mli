@@ -16,11 +16,13 @@ type range = {
   origin_begin: int64; (** virtual address in the thin disk *)
   data_begin: int64;   (** physical address in the real disk *)
   length: int64;       (** number of contiguous blocks *)
+  time: string;
 }
 
 type single = {
   origin_block: int64; (** virtual address in the thin disk *)
   data_block: int64;   (** physical address in the real disk *)
+  time: string;
 }
 
 type t =
