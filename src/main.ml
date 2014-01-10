@@ -150,7 +150,21 @@ let initialise_cmd =
     `S "DESCRIPTION";
     `P "Initialise the local metadata area by reserving all space. The 'use' command should then be used to register some free space for local allocation.";
   ] @ help in
-  Term.(ret(pure Impl.initialise $ common_options_t)),
+  
+  let metadata =
+    let doc = "The metadata device" in
+    Arg.(value & opt file "" & info [ "metadata" ] ~doc) in
+  let data =
+    let doc = "The data device" in
+    Arg.(value & opt file "" & info [ "data" ] ~doc) in
+  let block_size =
+    let doc = "The size of a block" in
+    Arg.(value & opt string "64KiB" & info [ "block-size" ] ~doc) in
+  let low_water_mark =
+    let doc = "The low water mark in blocks" in
+    Arg.(value & opt int64 0L & info [ "low-water-mark" ] ~doc) in
+
+  Term.(ret(pure Impl.initialise $ common_options_t $ metadata $ data $ block_size $ low_water_mark)),
   Term.info "initialise" ~sdocs:_common_options ~doc ~man
 
 let cmds = [ export_cmd; attach_cmd; detach_cmd; status_cmd;

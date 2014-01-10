@@ -144,18 +144,31 @@ let clone input output id =
   write_sexp_to output (Device.sexp_of_t d');
   `Ok ()
 
-let initialise common =
+let initialise common metadata data block_size low_water_mark =
   dont_print_usage (
-    load common >>= fun t ->
-    if t.Superblock.devices <> [] then begin
-      Printf.fprintf stderr "WARNING: multiple devices already exist in the metadata.\n";
-      let rec confirm () =
-        Printf.fprintf stderr "Type 'erase' if you want to erase them\n%!";
-        match String.lowercase (input_line stdin) with
-        | "erase" -> ()
-        | _ -> confirm () in
-      confirm ();
+    begin match Thin.dump metadata with
+    | `Ok t ->
+      if t.Superblock.devices <> [] then begin
+        Printf.fprintf stderr "WARNING: multiple devices already exist in the metadata.\n";
+        let rec confirm () =
+          Printf.fprintf stderr "Type 'erase' if you want to erase them\n%!";
+          match String.lowercase (input_line stdin) with
+          | "erase" -> ()
+          | _ -> confirm () in
+        confirm ();
+      end
+    | `Error _ -> () (* good *)
     end;
+    Thin.erase metadata >>= fun () ->
+    ( match Block.blkgetsize data with
+    | `Ok size -> `Ok size
+    | `Error `Disconnected
+    | `Error `Is_read_only
+    | `Error `Unimplemented
+    | `Error (`Unknown _) -> `Error (Printf.sprintf "BLKGETSIZE64 %s failed" data) ) >>= fun size ->
+    let block_size = parse_size block_size in
+    Dmsetup.create ~name:common.Common.table ~size ~metadata ~data ~block_size ~low_water_mark () >>= fun () ->
+    load common >>= fun t ->
     let t = Superblock.initialise t in
     rewrite_metadata common t
   )

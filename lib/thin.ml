@@ -76,3 +76,14 @@ let restore metadata filename =
        `Ok ()
       )
   with e -> `Error(Printexc.to_string e)
+
+let erase device =
+  (** XXX: check the device isn't in use by a thin pool *)
+  try
+    with_oc device
+      (fun oc ->
+        let buf = String.make 4096 '\000' in
+        output_string oc buf
+      );
+    `Ok ()
+  with e -> `Error(Printf.sprintf "erasing %s failed: %s" device (Printexc.to_string e))

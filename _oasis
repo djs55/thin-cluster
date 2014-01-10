@@ -19,7 +19,7 @@ Executable thin
   CompiledObject:     best
   Path:               src
   MainIs:             main.ml
-  BuildDepends:       dmthin, cmdliner
+  BuildDepends:       dmthin, cmdliner, mirage-block-unix
 
 Executable test
   CompiledObject:     best

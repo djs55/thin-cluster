@@ -1,5 +1,5 @@
 # OASIS_START
-# DO NOT EDIT (digest: 20dca6e1ec82a0bd253cc856205cc840)
+# DO NOT EDIT (digest: 26fb1c24e822ba87abe5fcdebf11bc62)
 # Ignore VCS directories, you can use the same kind of rule outside
 # OASIS_START/STOP if you want to exclude directories that contains
 # useless stuff for the build process
@@ -33,11 +33,13 @@
 # Executable thin
 <src/main.{native,byte}>: use_dmthin
 <src/main.{native,byte}>: pkg_cmdliner
+<src/main.{native,byte}>: pkg_mirage-block-unix
 <src/main.{native,byte}>: pkg_xmlm
 <src/main.{native,byte}>: pkg_sexplib
 <src/main.{native,byte}>: pkg_re.str
 <src/*.ml{,i}>: use_dmthin
 <src/*.ml{,i}>: pkg_cmdliner
+<src/*.ml{,i}>: pkg_mirage-block-unix
 <src/*.ml{,i}>: pkg_xmlm
 <src/*.ml{,i}>: pkg_sexplib
 <src/*.ml{,i}>: pkg_re.str

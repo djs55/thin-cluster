@@ -17,3 +17,6 @@ val dump: string -> (Superblock.t, string) Result.t
 
 val restore: Superblock.t -> string -> (unit, string) Result.t
 (** [restore metadata device] writes the [metadata] to [device] *)
+
+val erase: string -> (unit, string) Result.t
+(** [erase device] wipes all metadata from [device] *)
