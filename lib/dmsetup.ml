@@ -30,18 +30,6 @@ let newline = Re_str.regexp_string "\n"
 let colon = Re_str.regexp_string ":"
 let space = Re_str.regexp_string " "
 
-let strip x =
-  let whitespace = function
-  | '\r' | '\n' | '\t' | ' ' -> true
-  | _ -> false in
-  let rec find i =
-    if i = String.length x || not(whitespace x.[i]) then i else find (i + 1) in
-  let start = find 0 in
-  let rec find i =
-    if i = 0 || not(whitespace x.[i]) then i else find (i - 1) in
-  let last = find (String.length x - 1) in
-  String.sub x start (last - start + 1)
-
 let until_blank_line lines =
   (* the first part is separated from the second by an empty line *)
   fst (List.fold_left (fun (acc, looking) line -> match looking, line with
@@ -51,7 +39,7 @@ let until_blank_line lines =
   ) ([], true) lines)
 
 let to_pair line = match Re_str.bounded_split_delim colon line 2 with
-| [ key; value ] -> key, strip value
+| [ key; value ] -> key, IO.strip value
 | _ -> failwith (Printf.sprintf "to_pair failed: %s" line)
 
 let _library_version = "Library version"

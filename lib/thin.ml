@@ -22,7 +22,7 @@ open Result
 let check_version () =
   let open Version in
   IO.run _dump [ "--version" ] >>= fun x ->
-  of_string x >>= fun v ->
+  of_string (IO.strip x) >>= fun v ->
   if v < minimum
   then `Error (Printf.sprintf "%s too old: (minimum is %s)" (to_string v) (to_string minimum))
   else `Ok ()

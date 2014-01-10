@@ -20,3 +20,7 @@ val debug: ('a, unit, string, unit) format4 -> 'a
 
 val run: string -> string list -> (string, string) Result.t
 (** [run cmd args] returns the stdout of "run args" or raises Failure *)
+
+val strip: string -> string
+(** [strip x] returns the largest sub-string of [x] without any whitespace
+    on the beginning or end. *)

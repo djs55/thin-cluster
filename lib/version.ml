@@ -17,14 +17,18 @@ type t = int * int * int (* major, minor, micro *)
 let dot = Re_str.regexp_string "."
 
 let of_string v =
-  match Re_str.split_delim dot v with
-  | [ major; minor; micro ] ->
-    let major = int_of_string major in
-    let minor = int_of_string minor in
-    let micro = int_of_string micro in
-    `Ok (major, minor, micro)
-  | _ ->
-    `Error (Printf.sprintf "Failed to parse version: %s" v)
+  try
+    match Re_str.split_delim dot v with
+    | [ major; minor; micro ] ->
+      let major = int_of_string major in
+      let minor = int_of_string minor in
+      let micro = int_of_string micro in
+      `Ok (major, minor, micro)
+    | _ ->
+      `Error (Printf.sprintf "Failed to parse version: %s" v)
+  with e ->
+      `Error (Printf.sprintf "Failed to parse version: %s (%s)" v (Printexc.to_string e))
+
 
 let to_string (major, minor, micro) = Printf.sprintf "%d.%d.%d" major minor micro
 

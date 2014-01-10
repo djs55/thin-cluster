@@ -91,3 +91,15 @@ let run_exn cmd args =
 let run cmd args =
   try `Ok (run_exn cmd args)
   with e -> `Error (Printf.sprintf "%s %s: %s" cmd (String.concat " " args) (Printexc.to_string e))
+
+let strip x =
+  let whitespace = function
+  | '\r' | '\n' | '\t' | ' ' -> true
+  | _ -> false in
+  let rec find i =
+    if i = String.length x || not(whitespace x.[i]) then i else find (i + 1) in
+  let start = find 0 in
+  let rec find i =
+    if i = 0 || not(whitespace x.[i]) then i else find (i - 1) in
+  let last = find (String.length x - 1) in
+  String.sub x start (last - start + 1)
