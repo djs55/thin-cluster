@@ -1,8 +1,8 @@
 # OASIS_START
-# DO NOT EDIT (digest: f1c0e0d90074454332278b98e0ce3a06)
+# DO NOT EDIT (digest: 8bb27ee9696f5356d8d59bf41767dc1a)
 version = "0.0.1"
 description = "Simple cluster based on dm-thin"
-requires = "xmlm sexplib re.str"
+requires = "xmlm sexplib re.str cstruct"
 archive(byte) = "dmthin.cma"
 archive(byte, plugin) = "dmthin.cma"
 archive(native) = "dmthin.cmxa"

@@ -12,6 +12,8 @@
  * GNU Lesser General Public License for more details.
  *)
 
+val test: string -> unit
+
 type t = {
   uuid: string;
   total_blocks: int64; (** total number of blocks on the data volume *)

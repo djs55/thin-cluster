@@ -193,6 +193,12 @@ let initialise common metadata data block_size low_water_mark =
     rewrite_metadata common before_t t
   )
 
+let info common metadata =
+  enable_logging common;
+  require "metadata" metadata >>= fun metadata ->
+  Superblock.test metadata;
+  `Ok ()
+
 let use common filename =
   enable_logging common;
   let s = read_sexp_from filename in

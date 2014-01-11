@@ -13,7 +13,7 @@ Library dmthin
   Path:               lib
   Findlibname:        dmthin
   Modules:            IO, Thin, Dmsetup, Result, Xml, Superblock, Mapping, Mappings, Device, Allocator, Extents, Version
-  BuildDepends:       xmlm, sexplib, re.str
+  BuildDepends:       xmlm, sexplib, re.str, cstruct
 
 Executable thin
   CompiledObject:     best

@@ -13,6 +13,86 @@
  *)
 open Sexplib.Std
 
+cstruct superblock {
+  uint32_t checksum;
+  uint32_t flags;
+  uint64_t this_block_number;
+  uint8_t uuid[16];
+  uint64_t magic;
+  uint32_t version;
+  uint32_t time;
+  uint64_t transaction;
+  uint64_t held_root;
+  uint8_t space_map_root[128];
+  uint8_t metadata_space_map_root[128];
+  uint64_t data_mapping_root;
+  uint64_t device_details_root; (* dev id -> device_details *)
+  uint32_t data_block_size; (* multiples of 512 *)
+  uint32_t metadata_block_size; (* multiples of 512 *)
+  uint64_t metadata_blocks;
+  uint32_t compat_flags;
+  uint32_t compat_ro_flags;
+  uint32_t incompat_flags;
+} as little_endian
+
+type superblock = {
+  checksum: int32;
+  flags: int32;
+  this_block_number: int64;
+  uuid: string;
+  magic: int64;
+  version: int32;
+  time: int32;
+  transaction: int64;
+  held_root: int64;
+  space_map_root: string;
+  metadata_space_map_root: string;
+  data_mapping_root: int64;
+  device_details_root: int64;
+  data_block_size: int32;
+  metadata_block_size: int32;
+  metadata_blocks: int64;
+  compat_flags: int32;
+  compat_ro_flags: int32;
+  incompat_flags: int32;
+} with sexp
+
+let of_cstruct buf = {
+  checksum = get_superblock_checksum buf;
+  flags = get_superblock_flags buf;
+  this_block_number = get_superblock_this_block_number buf;
+  uuid = copy_superblock_uuid buf;
+  magic = get_superblock_magic buf;
+  version = get_superblock_version buf;
+  time = get_superblock_time buf;
+  transaction = get_superblock_transaction buf;
+  held_root = get_superblock_held_root buf;
+  space_map_root = copy_superblock_space_map_root buf;
+  metadata_space_map_root = copy_superblock_metadata_space_map_root buf;
+  data_mapping_root = get_superblock_data_mapping_root buf;
+  device_details_root = get_superblock_device_details_root buf;
+  data_block_size = get_superblock_data_block_size buf;
+  metadata_block_size = get_superblock_metadata_block_size buf;
+  metadata_blocks = get_superblock_metadata_blocks buf;
+  compat_flags = get_superblock_compat_flags buf;
+  compat_ro_flags = get_superblock_compat_ro_flags buf;
+  incompat_flags = get_superblock_incompat_flags buf;
+}
+
+cstruct device_details {
+  uint64_t mapped_blocks;
+  uint64_t transaction;
+  uint32_t creation_time;
+  uint32_t snapshotted_time;
+} as little_endian
+
+let test device =
+  let fd = Unix.openfile device [ Unix.O_RDONLY ] 0o0 in
+  let ba = Bigarray.Array1.map_file fd Bigarray.char Bigarray.c_layout false 512 in
+  let c = Cstruct.of_bigarray ba in
+  let t = of_cstruct c in
+  Sexplib.Sexp.output_hum_indent 2 stdout (sexp_of_superblock t) 
+
 type t = {
   uuid: string;
   total_blocks: int64;

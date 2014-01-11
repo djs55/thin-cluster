@@ -167,9 +167,18 @@ let initialise_cmd =
   Term.(ret(pure Impl.initialise $ common_options_t $ metadata $ data $ block_size $ low_water_mark)),
   Term.info "initialise" ~sdocs:_common_options ~doc ~man
 
+let info_cmd =
+  let doc = "Query on-disk metadata" in
+  let man = [] in
+  let metadata =
+    let doc = "The metadata device" in
+    Arg.(value & opt (some file) None & info [ "metadata" ] ~doc) in
+  Term.(ret(pure Impl.info $ common_options_t $ metadata)),
+  Term.info "info" ~sdocs:_common_options ~doc ~man
+
 let cmds = [ export_cmd; attach_cmd; detach_cmd; status_cmd;
              use_cmd; free_cmd; initialise_cmd;
-             snapshot_cmd ]
+             snapshot_cmd; info_cmd ]
 
 let default_cmd = 
   let doc = "manipulate dmthin metadata" in
