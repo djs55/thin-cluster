@@ -40,15 +40,18 @@ let iso8601_of_float x =
     time.Unix.tm_min
     time.Unix.tm_sec
 
-let load common =
+let enable_logging common =
   if common.Common.debug
   then IO.debug_output := (fun s ->
     Printf.fprintf stderr "%s %s\n%!" (iso8601_of_float (Unix.gettimeofday ())) s
-  );
+  )
+
+let load common =
   Dmsetup.status common.Common.table >>= fun status ->
   Thin.dump status.Dmsetup.Status.metadata
 
 let status common =
+  enable_logging common;
   match load common with
   | `Ok t ->
     let size x = Printf.sprintf "%s (%Ld blocks)" (Common.size (Int64.(mul x (of_int t.Superblock.data_block_size)))) x in
@@ -89,6 +92,7 @@ let read_sexp_from filename =
   else Sexplib.Sexp.load_sexp filename
 
 let export common volume filename =
+  enable_logging common;
   match load common with
   | `Ok t ->
     begin match Superblock.find_device t volume with
@@ -124,6 +128,7 @@ let dont_print_usage = function
   | `Error x -> `Error(false, x)
 
 let attach common filename =
+  enable_logging common;
   dont_print_usage (
     load common >>= fun before_t ->
     let s = read_sexp_from filename in
@@ -133,6 +138,7 @@ let attach common filename =
   )
 
 let detach common volume =
+  enable_logging common;
   dont_print_usage (
     load common >>= fun before_t ->
     Superblock.detach before_t volume >>= fun t ->
@@ -140,6 +146,7 @@ let detach common volume =
   )
 
 let snapshot common volume id =
+  enable_logging common;
   dont_print_usage (
     load common >>= fun before_t ->
     Superblock.snapshot before_t volume id >>= fun t ->
@@ -155,6 +162,7 @@ let clone input output id =
   `Ok ()
 
 let initialise common metadata data block_size low_water_mark =
+  enable_logging common;
   require "metadata" metadata >>= fun metadata ->
   require "data" data >>= fun data ->
   dont_print_usage (
@@ -186,6 +194,7 @@ let initialise common metadata data block_size low_water_mark =
   )
 
 let use common filename =
+  enable_logging common;
   let s = read_sexp_from filename in
   let allocation = Allocator.t_of_sexp s in
   dont_print_usage (
@@ -195,6 +204,7 @@ let use common filename =
   )
 
 let free common space filename =
+  enable_logging common;
   let space = Common.parse_size space in
   dont_print_usage (
     load common >>= fun before_t ->
