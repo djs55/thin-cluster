@@ -143,11 +143,11 @@ module Btree (V: VALUE) = struct
     let nr_entries = Int32.to_int (get_node_nr_entries c) in
     let max_entries = Int32.to_int (get_node_max_entries c) in
     let value_size = Int32.to_int (get_node_value_size c) in
-    let data = Cstruct.(sub c sizeof_node ((8 + value_size) * nr_entries)) in
+    let keys = Cstruct.shift c sizeof_node in
+    let values = Cstruct.shift keys (8 * max_entries) in
     let entries = Array.init nr_entries (fun i ->
-      let start = (8 + value_size) * i in
-      Cstruct.LE.get_uint64 data start,
-      V.of_cstruct (Cstruct.sub data (start + 8) value_size)
+      Cstruct.LE.get_uint64 keys (i * 8),
+      V.of_cstruct (Cstruct.sub values (i * value_size) value_size)
     ) in
     let internal = Int32.(logand flags 1l = 1l) in
     let leaf = Int32.(logand flags 2l = 2l) in
