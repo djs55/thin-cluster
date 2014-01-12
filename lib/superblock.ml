@@ -110,7 +110,14 @@ module Device_details = struct
   }
 end
 
-module Btree_node_header = struct
+module Cstruct = struct
+  include Cstruct
+  type t_ = string with sexp
+  let sexp_of_t t = sexp_of_t_ (Cstruct.to_string t)
+  let t_of_sexp s = Cstruct.of_string (t__of_sexp s)
+end
+
+module Btree_node = struct
   cstruct t {
     uint32_t checksum;
     uint32_t flags;
@@ -123,7 +130,10 @@ module Btree_node_header = struct
 
   let _ = assert (sizeof_t mod 8 = 0)
 
-  type kind = Internal | Leaf with sexp
+  type contents =
+  | References of (int64 * int64) array
+  | Data of (int64 * Cstruct.t) array
+  with sexp
 
   type t = {
     checksum: int32;
@@ -131,61 +141,94 @@ module Btree_node_header = struct
     nr_entries: int;
     max_entries: int;
     value_size: int;
-    kind: kind;
+    contents: contents;
   } with sexp
 
   let of_cstruct c =
     let checksum = get_t_checksum c in
     let flags = get_t_flags c in
+    let blocknr = get_t_blocknr c in
     let nr_entries = Int32.to_int (get_t_nr_entries c) in
     let max_entries = Int32.to_int (get_t_max_entries c) in
     let value_size = Int32.to_int (get_t_value_size c) in
     let internal = Int32.(logand flags 1l = 1l) in
     let leaf = Int32.(logand flags 2l = 2l) in
-    (* XXX: only one of internal, leaf must be set *)
+
+    if internal && leaf || (not internal && (not leaf))
+    then Printf.fprintf stderr "block %Ld is neither an internal node (%b) nor a leaf (%b)" blocknr internal leaf;
+
+    let keys = Cstruct.shift c sizeof_t in
+    let values = Cstruct.shift keys (8 * max_entries) in
+    let contents =
+      if leaf
+      then Data (Array.init nr_entries (fun i ->
+        Cstruct.LE.get_uint64 keys (i * 8),
+        Cstruct.sub values (i * value_size) value_size
+      ))
+      else References (Array.init nr_entries (fun i ->
+        Cstruct.LE.get_uint64 keys (i * 8),
+        Cstruct.LE.get_uint64 values (i * 8)
+      )) in
     {
-      checksum;
-      blocknr = get_t_blocknr c;
-      nr_entries; max_entries; value_size;
-      kind = if internal then Internal else Leaf;
+      checksum; blocknr;
+      nr_entries; max_entries; value_size; contents;
     }
 end
 
-module Btree (V: VALUE) = struct
+type 'a contents =
+| Leaf of (int64 * 'a) array
+| Node of (int64 * 'a tree Lazy.t) array
+and 'a tree = {
+  node: Btree_node.t;
+  contents: 'a contents
+}
+with sexp
 
-  type t =
-  | Internal of (int64 * int64) array
-  | Leaf of (int64 * V.t) array
-  with sexp
-
-  let of_cstruct c =
-    let h = Btree_node_header.of_cstruct c in
-    let keys = Cstruct.shift c Btree_node_header.sizeof_t in
-    let values = Cstruct.shift keys (8 * h.Btree_node_header.max_entries) in
-    match h.Btree_node_header.kind with
-    | Btree_node_header.Leaf ->
-      Leaf (Array.init h.Btree_node_header.nr_entries (fun i ->
-        Cstruct.LE.get_uint64 keys (i * 8),
-        V.of_cstruct (Cstruct.sub values (i * h.Btree_node_header.value_size) h.Btree_node_header.value_size)
-      ))
-    | Btree_node_header.Internal ->
-      Internal (Array.init h.Btree_node_header.nr_entries (fun i ->
-        Cstruct.LE.get_uint64 keys (i * 8),
-        Cstruct.LE.get_uint64 values (i * 8)
-      ))
+module type DISK = sig
+  val read: int64 -> Cstruct.t (* XXX: need to add an I/O type here *)
 end
 
-module String_tree = Btree(struct
+module Btree (D: DISK) (V: VALUE) = struct
+
+  type t = V.t tree with sexp
+
+  let rec of_cstruct c =
+    let node = Btree_node.of_cstruct c in
+    let contents = match node.Btree_node.contents with
+    | Btree_node.Data x -> Leaf (Array.map (fun (k, v) -> k, V.of_cstruct v) x)
+    | Btree_node.References x -> Node (Array.map (fun (k, v) ->
+Printf.fprintf stderr "References %Ld -> %Ld\n%!" k v;
+ k, lazy (of_cstruct (D.read v))) x) in
+    { node; contents }
+end
+
+module String_value = struct
   type t = string with sexp
   let of_cstruct = Cstruct.to_string
-end)
+end
 
-module Int64_tree = Btree(struct
+module Int64_value = struct
   type t = int64 with sexp
   let of_cstruct c = Cstruct.LE.get_uint64 c 0
-end)
+end
 
-module Device_details_tree = Btree(Device_details)
+module Indirect(D: DISK)(V: VALUE) = struct
+  type t = V.t with sexp
+  let of_cstruct c = V.of_cstruct (D.read (Cstruct.LE.get_uint64 c 0))
+end
+
+module Block_time_value = struct
+  type t = {
+    time: int;
+    block: int;
+  } with sexp
+
+  let of_cstruct c =
+    let raw = Cstruct.LE.get_uint64 c 0 in
+    let time = Int64.(to_int (logand raw (sub (shift_left 1L 25) 1L))) in
+    let block = Int64.(to_int (shift_right_logical raw 24)) in
+    { time; block }
+end
 
 let test device =
   let fd = Unix.openfile device [ Unix.O_RDONLY ] 0o0 in
@@ -200,17 +243,25 @@ let test device =
   let fd = Unix.openfile device [ Unix.O_RDONLY ] 0o0 in
   let ba = Bigarray.Array1.map_file fd Bigarray.char Bigarray.c_layout false (min file_size total) in
   let c = Cstruct.of_bigarray ba in
-  let get_block n = Cstruct.sub c (n * block_length) block_length in
-
-  let block = get_block (Int64.to_int t.device_details_root) in
+  let module Disk = struct
+    let read n =
+      Printf.fprintf stderr "reading block %Ld\n%!" n;
+      Cstruct.sub c (Int64.to_int n * block_length) block_length
+  end in
+  let module Device_details_tree = Btree(Disk)(Device_details) in
+  let block = Disk.read t.device_details_root in
   let root = Device_details_tree.of_cstruct block in
   Printf.printf "\ndevice details root:\n";
   Sexplib.Sexp.output_hum_indent 2 stdout (Device_details_tree.sexp_of_t root);
 
-  let block = get_block (Int64.to_int t.data_mapping_root) in
-  let root = Int64_tree.of_cstruct block in
+  let block = Disk.read t.data_mapping_root in
+  let module Data_mapping_tree = Btree(Disk)(Indirect(Disk)(Btree(Disk)(Block_time_value))) in
+(*
+  let module Data_mapping_tree = Btree(Disk)(Btree(Disk)(Block_time_value)) in
+*)
+  let root = Data_mapping_tree.of_cstruct block in
   Printf.printf "\ndata mapping root:\n";
-  Sexplib.Sexp.output_hum_indent 2 stdout (Int64_tree.sexp_of_t root)
+  Sexplib.Sexp.output_hum_indent 2 stdout (Data_mapping_tree.sexp_of_t root)
 
 type t = {
   uuid: string;
