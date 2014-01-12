@@ -134,6 +134,62 @@ module Device_details = struct
   }
 end
 
+module Index_entry = struct
+  cstruct t {
+    uint64_t blocknr;
+    uint32_t nr_free;
+    uint32_t none_free_before;
+  } as little_endian
+
+  type t = {
+    blocknr: int64;
+    nr_free: int32;
+    none_free_before: int32;
+  } with sexp
+
+  let of_cstruct c = {
+    blocknr = get_t_blocknr c;
+    nr_free = get_t_nr_free c;
+    none_free_before = get_t_none_free_before c;
+  }
+end
+
+module Bitmap = struct
+  cstruct t {
+    uint32_t checksum;
+    uint32_t _not_used;
+    uint64_t blocknr;
+  } as little_endian
+
+  type slot =
+  | Zero
+  | One
+  | Two
+  | More
+  with sexp
+
+  type t = {
+    checksum: int32;
+    blocknr: int64;
+    slots: slot array
+  } with sexp
+
+  let of_cstruct c =
+    let checksum = get_t_checksum c in
+    let blocknr = get_t_blocknr c in
+    let bits = Cstruct.shift c sizeof_t in
+    let slots = Array.init (Cstruct.len bits * 4) (fun i ->
+      let byte = Cstruct.get_uint8 bits (i / 4) in
+      let bits = (byte lsr ((i mod 4) * 2)) land 0b011 in
+      match bits with
+      | 0 -> Zero
+      | 1 -> One
+      | 2 -> Two
+      | _ -> More
+    ) in
+    { checksum; blocknr; slots }
+end
+
 module Cstruct = struct
   include Cstruct
   type t_ = string with sexp
@@ -236,6 +292,11 @@ module Int64_value = struct
   let of_cstruct c = Cstruct.LE.get_uint64 c 0
 end
 
+module Int32_value = struct
+  type t = int32 with sexp
+  let of_cstruct c = Cstruct.LE.get_uint32 c 0
+end
+
 module Indirect(D: DISK)(V: VALUE) = struct
   type t = V.t with sexp
   let of_cstruct c = V.of_cstruct (D.read (Cstruct.LE.get_uint64 c 0))
@@ -280,12 +341,21 @@ let test device =
 
   let block = Disk.read t.data_mapping_root in
   let module Data_mapping_tree = Btree(Disk)(Indirect(Disk)(Btree(Disk)(Block_time_value))) in
-(*
-  let module Data_mapping_tree = Btree(Disk)(Btree(Disk)(Block_time_value)) in
-*)
   let root = Data_mapping_tree.of_cstruct block in
   Printf.printf "\ndata mapping root:\n";
-  Sexplib.Sexp.output_hum_indent 2 stdout (Data_mapping_tree.sexp_of_t root)
+  Sexplib.Sexp.output_hum_indent 2 stdout (Data_mapping_tree.sexp_of_t root);
+
+  let block = Disk.read t.space_map_root.Space_map_root.ref_count_root in
+  let module Ref_count_tree = Btree(Disk)(Int32_value) in
+  let root = Ref_count_tree.of_cstruct block in
+  Printf.printf "\ndata space_map ref_count:\n";
+  Sexplib.Sexp.output_hum_indent 2 stdout (Ref_count_tree.sexp_of_t root);
+
+  let block = Disk.read t.space_map_root.Space_map_root.bitmap_root in
+  let module Bitmap_tree = Btree(Disk)(Index_entry) in
+  let root = Bitmap_tree.of_cstruct block in
+  Printf.printf "\ndata space_map bitmap:\n";
+  Sexplib.Sexp.output_hum_indent 2 stdout (Bitmap_tree.sexp_of_t root)
 
 type t = {
   uuid: string;
