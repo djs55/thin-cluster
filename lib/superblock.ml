@@ -159,9 +159,14 @@ module Btree (V: VALUE) = struct
     }
 end
 
-module String = Btree(struct
+module String_tree = Btree(struct
   type t = string with sexp
   let of_cstruct = Cstruct.to_string
+end)
+
+module Int64_tree = Btree(struct
+  type t = int64 with sexp
+  let of_cstruct c = Cstruct.LE.get_uint64 c 0
 end)
 
 module Device_details_tree = Btree(Device_details)
@@ -184,7 +189,12 @@ let test device =
   let block = get_block (Int64.to_int t.device_details_root) in
   let root = Device_details_tree.of_cstruct block in
   Printf.printf "\ndevice details root:\n";
-  Sexplib.Sexp.output_hum_indent 2 stdout (Device_details_tree.sexp_of_t root)
+  Sexplib.Sexp.output_hum_indent 2 stdout (Device_details_tree.sexp_of_t root);
+
+  let block = get_block (Int64.to_int t.data_mapping_root) in
+  let root = Int64_tree.of_cstruct block in
+  Printf.printf "\ndata mapping root:\n";
+  Sexplib.Sexp.output_hum_indent 2 stdout (Int64_tree.sexp_of_t root)
 
 type t = {
   uuid: string;
