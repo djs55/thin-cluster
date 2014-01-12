@@ -225,8 +225,8 @@ module Block_time_value = struct
 
   let of_cstruct c =
     let raw = Cstruct.LE.get_uint64 c 0 in
-    let time = Int64.(to_int (logand raw (sub (shift_left 1L 25) 1L))) in
     let block = Int64.(to_int (shift_right_logical raw 24)) in
+    let time = Int64.(to_int (sub raw (shift_left (of_int block) 24))) in
     { time; block }
 end
 
