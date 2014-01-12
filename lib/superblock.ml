@@ -134,26 +134,6 @@ module Device_details = struct
   }
 end
 
-module Index_entry = struct
-  cstruct t {
-    uint64_t blocknr;
-    uint32_t nr_free;
-    uint32_t none_free_before;
-  } as little_endian
-
-  type t = {
-    blocknr: int64;
-    nr_free: int32;
-    none_free_before: int32;
-  } with sexp
-
-  let of_cstruct c = {
-    blocknr = get_t_blocknr c;
-    nr_free = get_t_nr_free c;
-    none_free_before = get_t_none_free_before c;
-  }
-end
-
 module Bitmap = struct
   cstruct t {
     uint32_t checksum;
@@ -302,6 +282,29 @@ module Indirect(D: DISK)(V: VALUE) = struct
   let of_cstruct c = V.of_cstruct (D.read (Cstruct.LE.get_uint64 c 0))
 end
 
+module Index_entry(D: DISK) = struct
+  cstruct t {
+    uint64_t blocknr;
+    uint32_t nr_free;
+    uint32_t none_free_before;
+  } as little_endian
+
+  type t = {
+    blocknr: int64;
+    nr_free: int32;
+    none_free_before: int32;
+    bitmap: Bitmap.t;
+  } with sexp
+
+  let of_cstruct c =
+    let blocknr = get_t_blocknr c in
+    let nr_free = get_t_nr_free c in
+    let none_free_before = get_t_none_free_before c in
+    let block = D.read blocknr in
+    let bitmap = Bitmap.of_cstruct block in
+    { blocknr; nr_free; none_free_before; bitmap }
+end
+
 module Block_time_value = struct
   type t = {
     time: int;
@@ -313,6 +316,37 @@ module Block_time_value = struct
     let block = Int64.(to_int (shift_right_logical raw 24)) in
     let time = Int64.(to_int (sub raw (shift_left (of_int block) 24))) in
     { time; block }
+end
+
+module Metadata(D: DISK) = struct
+
+  module Device_details_tree = Btree(D)(Device_details)
+  module Data_mapping_tree = Btree(D)(Indirect(D)(Btree(D)(Block_time_value)))
+  module Ref_count_tree = Btree(D)(Int32_value)
+  module Bitmap_tree = Btree(D)(Index_entry(D))
+
+  type t = {
+    superblock: superblock;
+    device_details_tree: Device_details_tree.t;
+    data_mapping_tree: Data_mapping_tree.t;
+    space_map_bitmap_tree: Bitmap_tree.t;
+    space_map_ref_count_tree: Ref_count_tree.t;
+  } with sexp
+
+  let of_superblock superblock =
+    let block = D.read superblock.device_details_root in
+    let device_details_tree = Device_details_tree.of_cstruct block in
+
+    let block = D.read superblock.data_mapping_root in
+    let data_mapping_tree = Data_mapping_tree.of_cstruct block in
+
+    let block = D.read superblock.space_map_root.Space_map_root.ref_count_root in
+    let space_map_ref_count_tree = Ref_count_tree.of_cstruct block in
+
+    let block = D.read superblock.space_map_root.Space_map_root.bitmap_root in
+    let space_map_bitmap_tree = Bitmap_tree.of_cstruct block in
+    { superblock; device_details_tree; data_mapping_tree;
+      space_map_bitmap_tree; space_map_ref_count_tree }
 end
 
 let test device =
@@ -333,29 +367,9 @@ let test device =
       Printf.fprintf stderr "reading block %Ld\n%!" n;
       Cstruct.sub c (Int64.to_int n * block_length) block_length
   end in
-  let module Device_details_tree = Btree(Disk)(Device_details) in
-  let block = Disk.read t.device_details_root in
-  let root = Device_details_tree.of_cstruct block in
-  Printf.printf "\ndevice details root:\n";
-  Sexplib.Sexp.output_hum_indent 2 stdout (Device_details_tree.sexp_of_t root);
-
-  let block = Disk.read t.data_mapping_root in
-  let module Data_mapping_tree = Btree(Disk)(Indirect(Disk)(Btree(Disk)(Block_time_value))) in
-  let root = Data_mapping_tree.of_cstruct block in
-  Printf.printf "\ndata mapping root:\n";
-  Sexplib.Sexp.output_hum_indent 2 stdout (Data_mapping_tree.sexp_of_t root);
-
-  let block = Disk.read t.space_map_root.Space_map_root.ref_count_root in
-  let module Ref_count_tree = Btree(Disk)(Int32_value) in
-  let root = Ref_count_tree.of_cstruct block in
-  Printf.printf "\ndata space_map ref_count:\n";
-  Sexplib.Sexp.output_hum_indent 2 stdout (Ref_count_tree.sexp_of_t root);
-
-  let block = Disk.read t.space_map_root.Space_map_root.bitmap_root in
-  let module Bitmap_tree = Btree(Disk)(Index_entry) in
-  let root = Bitmap_tree.of_cstruct block in
-  Printf.printf "\ndata space_map bitmap:\n";
-  Sexplib.Sexp.output_hum_indent 2 stdout (Bitmap_tree.sexp_of_t root)
+  let module M = Metadata(Disk) in
+  let m = M.of_superblock t in
+  Sexplib.Sexp.output_hum_indent 2 stdout (M.sexp_of_t m)
 
 type t = {
   uuid: string;
