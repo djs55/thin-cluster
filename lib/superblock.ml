@@ -282,6 +282,13 @@ module Indirect(D: DISK)(V: VALUE) = struct
   let of_cstruct c = V.of_cstruct (D.read (Cstruct.LE.get_uint64 c 0))
 end
 
+type index_entry = {
+  blocknr: int64;
+  nr_free: int32;
+  none_free_before: int32;
+  bitmap: Bitmap.t;
+} with sexp
+
 module Index_entry(D: DISK) = struct
   cstruct t {
     uint64_t blocknr;
@@ -289,12 +296,7 @@ module Index_entry(D: DISK) = struct
     uint32_t none_free_before;
   } as little_endian
 
-  type t = {
-    blocknr: int64;
-    nr_free: int32;
-    none_free_before: int32;
-    bitmap: Bitmap.t;
-  } with sexp
+  type t = index_entry with sexp
 
   let of_cstruct c =
     let blocknr = get_t_blocknr c in
@@ -303,6 +305,35 @@ module Index_entry(D: DISK) = struct
     let block = D.read blocknr in
     let bitmap = Bitmap.of_cstruct block in
     { blocknr; nr_free; none_free_before; bitmap }
+end
+
+module Metadata_index(D: DISK) = struct
+  cstruct t {
+    uint32_t checksum;
+    uint32_t _padding;
+    uint64_t blocknr;
+  } as little_endian
+
+  type t = {
+    checksum: int32;
+    blocknr: int64;
+    entries: index_entry array;
+  } with sexp
+
+  module IE = Index_entry(D)
+
+  let of_cstruct c =
+    let checksum = get_t_checksum c in
+    let blocknr = get_t_blocknr c in
+    let c = Cstruct.shift c sizeof_t in
+    let rec loop acc i =
+      if i = 255 then Array.of_list (List.rev acc)
+      else begin
+        let t = IE.of_cstruct (Cstruct.sub c (16 * i) 16) in
+        loop (if t.blocknr <> 0L then t :: acc else acc) (i + 1)
+      end in
+    let entries = loop [] 0 in
+    { checksum; blocknr; entries }
 end
 
 module Block_time_value = struct
@@ -324,13 +355,16 @@ module Metadata(D: DISK) = struct
   module Data_mapping_tree = Btree(D)(Indirect(D)(Btree(D)(Block_time_value)))
   module Ref_count_tree = Btree(D)(Int32_value)
   module Bitmap_tree = Btree(D)(Index_entry(D))
+  module Bitmap_array = Metadata_index(D)
 
   type t = {
     superblock: superblock;
     device_details_tree: Device_details_tree.t;
     data_mapping_tree: Data_mapping_tree.t;
-    space_map_bitmap_tree: Bitmap_tree.t;
-    space_map_ref_count_tree: Ref_count_tree.t;
+    data_space_map_bitmap_tree: Bitmap_tree.t;
+    data_space_map_ref_count_tree: Ref_count_tree.t;
+    metadata_space_map_bitmap_array: Bitmap_array.t;
+    metadata_space_map_ref_count_tree: Ref_count_tree.t;
   } with sexp
 
   let of_superblock superblock =
@@ -341,12 +375,20 @@ module Metadata(D: DISK) = struct
     let data_mapping_tree = Data_mapping_tree.of_cstruct block in
 
     let block = D.read superblock.space_map_root.Space_map_root.ref_count_root in
-    let space_map_ref_count_tree = Ref_count_tree.of_cstruct block in
+    let data_space_map_ref_count_tree = Ref_count_tree.of_cstruct block in
 
     let block = D.read superblock.space_map_root.Space_map_root.bitmap_root in
-    let space_map_bitmap_tree = Bitmap_tree.of_cstruct block in
+    let data_space_map_bitmap_tree = Bitmap_tree.of_cstruct block in
+
+    let block = D.read superblock.metadata_space_map_root.Space_map_root.ref_count_root in
+    let metadata_space_map_ref_count_tree = Ref_count_tree.of_cstruct block in
+
+    let block = D.read superblock.metadata_space_map_root.Space_map_root.bitmap_root in
+    let metadata_space_map_bitmap_array = Bitmap_array.of_cstruct block in
+
     { superblock; device_details_tree; data_mapping_tree;
-      space_map_bitmap_tree; space_map_ref_count_tree }
+      data_space_map_bitmap_tree; data_space_map_ref_count_tree;
+      metadata_space_map_bitmap_array; metadata_space_map_ref_count_tree }
 end
 
 let test device =
@@ -354,8 +396,6 @@ let test device =
   let ba = Bigarray.Array1.map_file fd Bigarray.char Bigarray.c_layout false 512 in
   let c = Cstruct.of_bigarray ba in
   let t = of_cstruct c in
-  Printf.printf "Superblock:\n";
-  Sexplib.Sexp.output_hum_indent 2 stdout (sexp_of_superblock t);
   let block_length = Int32.to_int t.metadata_block_size * 512 in
   let file_size = Int64.to_int (Unix.LargeFile.stat device).Unix.LargeFile.st_size in
   let total = Int64.to_int t.metadata_blocks * block_length in
