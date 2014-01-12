@@ -13,6 +13,30 @@
  *)
 open Sexplib.Std
 
+module Space_map_root = struct
+  cstruct t {
+    uint64_t nr_blocks;
+    uint64_t nr_allocated;
+    uint64_t bitmap_root;
+    uint64_t ref_count_root;
+    uint8_t _padding[96]; (* 128 - size of the rest of the fields *)
+  } as little_endian
+
+  type t = {
+    nr_blocks: int64;
+    nr_allocated: int64;
+    bitmap_root: int64;
+    ref_count_root: int64;
+  } with sexp
+
+  let of_cstruct c = {
+    nr_blocks = get_t_nr_blocks c;
+    nr_allocated = get_t_nr_allocated c;
+    bitmap_root = get_t_bitmap_root c;
+    ref_count_root = get_t_ref_count_root c;
+  }
+end
+
 let magic = 27022010
 
 cstruct superblock {
@@ -47,8 +71,8 @@ type superblock = {
   time: int32;
   transaction: int64;
   held_root: int64;
-  space_map_root: string;
-  metadata_space_map_root: string;
+  space_map_root: Space_map_root.t;
+  metadata_space_map_root: Space_map_root.t;
   data_mapping_root: int64;
   device_details_root: int64;
   data_block_size: int32;
@@ -69,8 +93,8 @@ let of_cstruct buf = {
   time = get_superblock_time buf;
   transaction = get_superblock_transaction buf;
   held_root = get_superblock_held_root buf;
-  space_map_root = copy_superblock_space_map_root buf;
-  metadata_space_map_root = copy_superblock_metadata_space_map_root buf;
+  space_map_root = Space_map_root.of_cstruct (get_superblock_space_map_root buf);
+  metadata_space_map_root = Space_map_root.of_cstruct (get_superblock_metadata_space_map_root buf);
   data_mapping_root = get_superblock_data_mapping_root buf;
   device_details_root = get_superblock_device_details_root buf;
   data_block_size = get_superblock_data_block_size buf;
