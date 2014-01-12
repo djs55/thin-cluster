@@ -110,9 +110,8 @@ module Device_details = struct
   }
 end
 
-module Btree (V: VALUE) = struct
-
-  cstruct node {
+module Btree_node_header = struct
+  cstruct t {
     uint32_t checksum;
     uint32_t flags;
     uint64_t blocknr;
@@ -120,43 +119,60 @@ module Btree (V: VALUE) = struct
     uint32_t max_entries;
     uint32_t value_size;
     uint32_t _padding;
-    (** uint64_t keys[] *)
   } as little_endian
 
-  let _ = assert (sizeof_node mod 8 = 0)
+  let _ = assert (sizeof_t mod 8 = 0)
+
+  type kind = Internal | Leaf with sexp
 
   type t = {
     checksum: int32;
-    flags: int32;
     blocknr: int64;
     nr_entries: int;
     max_entries: int;
     value_size: int;
-    entries: (int64 * V.t) array;
-    internal: bool;
-    leaf: bool;
+    kind: kind;
   } with sexp
 
   let of_cstruct c =
-    let checksum = get_node_checksum c in
-    let flags = get_node_flags c in
-    let nr_entries = Int32.to_int (get_node_nr_entries c) in
-    let max_entries = Int32.to_int (get_node_max_entries c) in
-    let value_size = Int32.to_int (get_node_value_size c) in
-    let keys = Cstruct.shift c sizeof_node in
-    let values = Cstruct.shift keys (8 * max_entries) in
-    let entries = Array.init nr_entries (fun i ->
-      Cstruct.LE.get_uint64 keys (i * 8),
-      V.of_cstruct (Cstruct.sub values (i * value_size) value_size)
-    ) in
+    let checksum = get_t_checksum c in
+    let flags = get_t_flags c in
+    let nr_entries = Int32.to_int (get_t_nr_entries c) in
+    let max_entries = Int32.to_int (get_t_max_entries c) in
+    let value_size = Int32.to_int (get_t_value_size c) in
     let internal = Int32.(logand flags 1l = 1l) in
     let leaf = Int32.(logand flags 2l = 2l) in
+    (* XXX: only one of internal, leaf must be set *)
     {
-      checksum; flags;
-      blocknr = get_node_blocknr c;
-      nr_entries; max_entries; value_size; entries;
-      internal; leaf;
+      checksum;
+      blocknr = get_t_blocknr c;
+      nr_entries; max_entries; value_size;
+      kind = if internal then Internal else Leaf;
     }
+end
+
+module Btree (V: VALUE) = struct
+
+  type t =
+  | Internal of (int64 * int64) array
+  | Leaf of (int64 * V.t) array
+  with sexp
+
+  let of_cstruct c =
+    let h = Btree_node_header.of_cstruct c in
+    let keys = Cstruct.shift c Btree_node_header.sizeof_t in
+    let values = Cstruct.shift keys (8 * h.Btree_node_header.max_entries) in
+    match h.Btree_node_header.kind with
+    | Btree_node_header.Leaf ->
+      Leaf (Array.init h.Btree_node_header.nr_entries (fun i ->
+        Cstruct.LE.get_uint64 keys (i * 8),
+        V.of_cstruct (Cstruct.sub values (i * h.Btree_node_header.value_size) h.Btree_node_header.value_size)
+      ))
+    | Btree_node_header.Internal ->
+      Internal (Array.init h.Btree_node_header.nr_entries (fun i ->
+        Cstruct.LE.get_uint64 keys (i * 8),
+        Cstruct.LE.get_uint64 values (i * 8)
+      ))
 end
 
 module String_tree = Btree(struct
