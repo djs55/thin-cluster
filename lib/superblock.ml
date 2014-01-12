@@ -13,6 +13,8 @@
  *)
 open Sexplib.Std
 
+let magic = 27022010
+
 cstruct superblock {
   uint32_t checksum;
   uint32_t flags;
@@ -79,19 +81,110 @@ let of_cstruct buf = {
   incompat_flags = get_superblock_incompat_flags buf;
 }
 
-cstruct device_details {
-  uint64_t mapped_blocks;
-  uint64_t transaction;
-  uint32_t creation_time;
-  uint32_t snapshotted_time;
-} as little_endian
+module type VALUE = sig
+  type t with sexp
+
+  val of_cstruct: Cstruct.t -> t
+end
+
+module Device_details = struct
+  cstruct t {
+    uint64_t mapped_blocks;
+    uint64_t transaction;
+    uint32_t creation_time;
+    uint32_t snapshotted_time;
+  } as little_endian
+
+  type t = {
+    mapped_blocks: int64;
+    transaction: int64;
+    creation_time: int32;
+    snapshotted_time: int32;
+  } with sexp
+
+  let of_cstruct c = {
+    mapped_blocks = get_t_mapped_blocks c;
+    transaction = get_t_transaction c;
+    creation_time = get_t_creation_time c;
+    snapshotted_time = get_t_snapshotted_time c;
+  }
+end
+
+module Btree (V: VALUE) = struct
+
+  cstruct node {
+    uint32_t checksum;
+    uint32_t flags;
+    uint64_t blocknr;
+    uint32_t nr_entries;
+    uint32_t max_entries;
+    uint32_t value_size;
+    uint32_t _padding;
+    (** uint64_t keys[] *)
+  } as little_endian
+
+  let _ = assert (sizeof_node mod 8 = 0)
+
+  type t = {
+    checksum: int32;
+    flags: int32;
+    blocknr: int64;
+    nr_entries: int;
+    max_entries: int;
+    value_size: int;
+    entries: (int64 * V.t) array;
+    internal: bool;
+    leaf: bool;
+  } with sexp
+
+  let of_cstruct c =
+    let checksum = get_node_checksum c in
+    let flags = get_node_flags c in
+    let nr_entries = Int32.to_int (get_node_nr_entries c) in
+    let max_entries = Int32.to_int (get_node_max_entries c) in
+    let value_size = Int32.to_int (get_node_value_size c) in
+    let data = Cstruct.(sub c sizeof_node ((8 + value_size) * nr_entries)) in
+    let entries = Array.init nr_entries (fun i ->
+      let start = (8 + value_size) * i in
+      Cstruct.LE.get_uint64 data start,
+      V.of_cstruct (Cstruct.sub data (start + 8) value_size)
+    ) in
+    let internal = Int32.(logand flags 1l = 1l) in
+    let leaf = Int32.(logand flags 2l = 2l) in
+    {
+      checksum; flags;
+      blocknr = get_node_blocknr c;
+      nr_entries; max_entries; value_size; entries;
+      internal; leaf;
+    }
+end
+
+module String = Btree(struct
+  type t = string with sexp
+  let of_cstruct = Cstruct.to_string
+end)
+
+module Device_details_tree = Btree(Device_details)
 
 let test device =
   let fd = Unix.openfile device [ Unix.O_RDONLY ] 0o0 in
   let ba = Bigarray.Array1.map_file fd Bigarray.char Bigarray.c_layout false 512 in
   let c = Cstruct.of_bigarray ba in
   let t = of_cstruct c in
-  Sexplib.Sexp.output_hum_indent 2 stdout (sexp_of_superblock t) 
+  Printf.printf "Superblock:\n";
+  Sexplib.Sexp.output_hum_indent 2 stdout (sexp_of_superblock t);
+  let block_length = Int32.to_int t.metadata_block_size * 512 in
+  let file_size = Int64.to_int (Unix.LargeFile.stat device).Unix.LargeFile.st_size in
+  let total = Int64.to_int t.metadata_blocks * block_length in
+  let fd = Unix.openfile device [ Unix.O_RDONLY ] 0o0 in
+  let ba = Bigarray.Array1.map_file fd Bigarray.char Bigarray.c_layout false (min file_size total) in
+  let c = Cstruct.of_bigarray ba in
+  let get_block n = Cstruct.sub c (n * block_length) block_length in
+
+  let block = get_block (Int64.to_int t.device_details_root) in
+  let root = Device_details_tree.of_cstruct block in
+  Printf.printf "\ndevice details root:\n";
+  Sexplib.Sexp.output_hum_indent 2 stdout (Device_details_tree.sexp_of_t root)
 
 type t = {
   uuid: string;
