@@ -392,19 +392,30 @@ module Metadata(D: DISK) = struct
 end
 
 let test device =
-  let fd = Unix.openfile device [ Unix.O_RDONLY ] 0o0 in
-  let ba = Bigarray.Array1.map_file fd Bigarray.char Bigarray.c_layout false 512 in
+  let fd = Unix.openfile device [ Unix.O_RDWR ] 0o0 in
+  let ba = Bigarray.Array1.map_file fd Bigarray.char Bigarray.c_layout true 512 in
   let c = Cstruct.of_bigarray ba in
   let t = of_cstruct c in
+  Sexplib.Sexp.output_hum_indent 2 stdout (sexp_of_superblock t);
+
   let block_length = Int32.to_int t.metadata_block_size * 512 in
-  let file_size = Int64.to_int (Unix.LargeFile.stat device).Unix.LargeFile.st_size in
+
+  (* I'm seeing obvious corruption of the metadata_block_size field: *)
+  let block_length = 8 * 512 in
+  let file_size =
+    let stats = Unix.LargeFile.stat device in
+    if stats.Unix.LargeFile.st_kind = Unix.S_REG
+    then Int64.to_int stats.Unix.LargeFile.st_size
+    else match Block.blkgetsize device with
+    | `Ok x -> Int64.to_int x
+    | `Error _ -> failwith "blkgetsize64" in
   let total = Int64.to_int t.metadata_blocks * block_length in
-  let fd = Unix.openfile device [ Unix.O_RDONLY ] 0o0 in
-  let ba = Bigarray.Array1.map_file fd Bigarray.char Bigarray.c_layout false (min file_size total) in
+  let fd = Unix.openfile device [ Unix.O_RDWR ] 0o0 in
+  let ba = Bigarray.Array1.map_file fd Bigarray.char Bigarray.c_layout true (min file_size total) in
   let c = Cstruct.of_bigarray ba in
   let module Disk = struct
     let read n =
-      Printf.fprintf stderr "reading block %Ld\n%!" n;
+      Printf.fprintf stderr "reading block %Ld (length %d)\n%!" n block_length;
       Cstruct.sub c (Int64.to_int n * block_length) block_length
   end in
   let module M = Metadata(Disk) in

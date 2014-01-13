@@ -1,5 +1,5 @@
 # OASIS_START
-# DO NOT EDIT (digest: 80d41e2c97c0db3904fb12472010e0c3)
+# DO NOT EDIT (digest: ab5d30618cb41776c374f9ef880d3e4b)
 # Ignore VCS directories, you can use the same kind of rule outside
 # OASIS_START/STOP if you want to exclude directories that contains
 # useless stuff for the build process
@@ -27,6 +27,7 @@
 "lib/allocator.cmx": for-pack(Dmthin)
 "lib/extents.cmx": for-pack(Dmthin)
 "lib/version.cmx": for-pack(Dmthin)
+<lib/*.ml{,i}>: pkg_mirage-block-unix
 <lib/*.ml{,i}>: pkg_xmlm
 <lib/*.ml{,i}>: pkg_sexplib
 <lib/*.ml{,i}>: pkg_re.str
@@ -49,12 +50,14 @@
 # Executable test
 <lib_test/test.{native,byte}>: use_dmthin
 <lib_test/test.{native,byte}>: pkg_oUnit
+<lib_test/test.{native,byte}>: pkg_mirage-block-unix
 <lib_test/test.{native,byte}>: pkg_xmlm
 <lib_test/test.{native,byte}>: pkg_sexplib
 <lib_test/test.{native,byte}>: pkg_re.str
 <lib_test/test.{native,byte}>: pkg_cstruct
 <lib_test/*.ml{,i}>: use_dmthin
 <lib_test/*.ml{,i}>: pkg_oUnit
+<lib_test/*.ml{,i}>: pkg_mirage-block-unix
 <lib_test/*.ml{,i}>: pkg_xmlm
 <lib_test/*.ml{,i}>: pkg_sexplib
 <lib_test/*.ml{,i}>: pkg_re.str
